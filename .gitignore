@@ -1,0 +1,4 @@
+.agent
+.DS_Store
+docs/prompt.md
+.env

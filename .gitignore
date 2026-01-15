@@ -1,4 +1,7 @@
 .agent
+.vscode
+
 .DS_Store
-docs/prompt.md
+docs/*
 .env
+.gitignore

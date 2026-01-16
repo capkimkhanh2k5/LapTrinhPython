@@ -20,9 +20,5 @@ class CustomUserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'is_employer', 'is_candidate', 'employer_profile', 'candidate_profile', 'password']
         extra_kwargs = {'password': {'write_only': True}}
 
-    def create(self, validated_data):
-        password = validated_data.pop('password')
-        user = CustomUser(**validated_data)
-        user.set_password(password)
-        user.save()
-        return user
+    # Logic moved to Service Layer
+    # def create(self, validated_data): ...

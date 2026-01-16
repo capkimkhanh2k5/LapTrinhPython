@@ -25,23 +25,22 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from apps.users.views import UserViewSet, EmployerProfileViewSet, CandidateProfileViewSet
-from apps.jobs.views import JobViewSet, CategoryViewSet
-from apps.applications.views import ApplicationViewSet
+from apps.users.views import UserViewSet
+
+# from apps.jobs.views import JobViewSet, CategoryViewSet
+# from apps.applications.views import ApplicationViewSet
 
 router = DefaultRouter()
-# router.register(r'users', UserViewSet)     -> Moved to apps/users/urls.py
-# router.register(r'employers', EmployerProfileViewSet)
-# router.register(r'candidates', CandidateProfileViewSet)
-router.register(r'jobs', JobViewSet)
-router.register(r'categories', CategoryViewSet)
-router.register(r'applications', ApplicationViewSet)
+# router.register(r'users', UserViewSet)
+# router.register(r'jobs', JobViewSet)
+# router.register(r'categories', CategoryViewSet)
+# router.register(r'applications', ApplicationViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    path('api/users/', include('apps.users.urls')), # Modular include
-    path('api/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/users/', include('apps.users.urls')),
     path('api/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
+

@@ -4,4 +4,9 @@
 .DS_Store
 docs/*
 .env
+**/.env
+db.sqlite3
+**/*.sqlite3
 .gitignore
+
+createAppsBE.sh

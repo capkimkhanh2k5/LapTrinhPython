@@ -1,4 +1,4 @@
-from backend.apps.users.models import CustomUser
+from apps.users.models import CustomUser
 from typing import Iterable
 
 def get_user(*, email: str) -> CustomUser | None:

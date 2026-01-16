@@ -47,11 +47,112 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    # Local
-    'apps.users',
-    'apps.jobs',
-    'apps.applications',
-    'apps.companies',
+    
+    # ===== Core Domain =====
+    'apps.core.users',
+    
+    # ===== Geography Domain =====
+    'apps.geography.provinces',
+    'apps.geography.communes',
+    'apps.geography.addresses',
+    
+    # ===== Company Domain =====
+    'apps.company.companies',
+    'apps.company.industries',
+    'apps.company.benefit_categories',
+    'apps.company.company_benefits',
+    'apps.company.media_types',
+    'apps.company.company_media',
+    
+    # ===== Recruitment Domain =====
+    'apps.recruitment.jobs',
+    'apps.recruitment.job_categories',
+    'apps.recruitment.job_skills',
+    'apps.recruitment.job_locations',
+    'apps.recruitment.applications',
+    'apps.recruitment.application_status_history',
+    'apps.recruitment.interviews',
+    'apps.recruitment.interview_types',
+    'apps.recruitment.interview_interviewers',
+    'apps.recruitment.saved_jobs',
+    'apps.recruitment.job_views',
+    'apps.recruitment.recruitment_campaigns',
+    'apps.recruitment.campaign_jobs',
+    
+    # ===== Candidate Domain =====
+    'apps.candidate.recruiters',
+    'apps.candidate.recruiter_education',
+    'apps.candidate.recruiter_experience',
+    'apps.candidate.recruiter_skills',
+    'apps.candidate.recruiter_certifications',
+    'apps.candidate.recruiter_languages',
+    'apps.candidate.recruiter_projects',
+    'apps.candidate.recruiter_cvs',
+    'apps.candidate.cv_templates',
+    'apps.candidate.cv_template_categories',
+    'apps.candidate.skills',
+    'apps.candidate.skill_categories',
+    'apps.candidate.languages',
+    
+    # ===== Assessment Domain =====
+    'apps.assessment.assessment_tests',
+    'apps.assessment.assessment_categories',
+    'apps.assessment.job_assessment_requirements',
+    'apps.assessment.test_results',
+    'apps.assessment.ai_matching_scores',
+    
+    # ===== Social Domain =====
+    'apps.social.reviews',
+    'apps.social.review_reactions',
+    'apps.social.recommendations',
+    'apps.social.recruiter_connections',
+    'apps.social.skill_endorsements',
+    'apps.social.company_followers',
+    'apps.social.referral_programs',
+    'apps.social.referrals',
+    
+    # ===== Communication Domain =====
+    'apps.communication.notifications',
+    'apps.communication.notification_types',
+    'apps.communication.messages',
+    'apps.communication.message_threads',
+    'apps.communication.message_participants',
+    'apps.communication.job_alerts',
+    'apps.communication.job_alert_skills',
+    
+    # ===== Billing Domain =====
+    'apps.billing.subscription_plans',
+    'apps.billing.company_subscriptions',
+    'apps.billing.payment_methods',
+    'apps.billing.payment_transactions',
+    
+    # ===== Email Domain =====
+    'apps.email.email_templates',
+    'apps.email.email_template_categories',
+    'apps.email.email_campaigns',
+    'apps.email.email_logs',
+    'apps.email.sent_emails',
+    
+    # ===== Blog Domain =====
+    'apps.blog.blog_posts',
+    'apps.blog.blog_categories',
+    'apps.blog.blog_tags',
+    'apps.blog.blog_post_tags',
+    'apps.blog.blog_comments',
+    
+    # ===== System Domain =====
+    'apps.system.system_settings',
+    'apps.system.activity_logs',
+    'apps.system.activity_log_types',
+    'apps.system.file_uploads',
+    'apps.system.analytics_reports',
+    'apps.system.analytics_daily_statistics',
+    'apps.system.report_types',
+    'apps.system.reports',
+    'apps.system.audit_logs',
+    'apps.system.search_history',
+    'apps.system.faqs',
+    'apps.system.job_search_history',
 ]
 
 MIDDLEWARE = [
@@ -142,7 +243,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = 'core_users.CustomUser'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

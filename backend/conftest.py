@@ -14,3 +14,14 @@ def api_client():
     """Fixture tạo API client cho tất cả tests"""
     from rest_framework.test import APIClient
     return APIClient()
+
+
+@pytest.fixture
+def user(db):
+    """Fixture tạo một CustomUser cho tests"""
+    from apps.core.users.models import CustomUser
+    return CustomUser.objects.create_user(
+        email="testuser@example.com",
+        password="password123",
+        full_name="Test User"
+    )

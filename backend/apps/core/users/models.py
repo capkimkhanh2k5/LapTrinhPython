@@ -110,6 +110,19 @@ class CustomUser(AbstractUser):
         auto_now=True,
         verbose_name='Ngày cập nhật'
     )
+    
+    # 2FA Fields
+    two_factor_enabled = models.BooleanField(
+        default=False,
+        verbose_name='Kích hoạt 2FA'
+    )
+    two_factor_secret = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        verbose_name='Mã bí mật 2FA'
+    )
+
     # Note: last_login is already provided by AbstractUser
     
     USERNAME_FIELD = 'email'
@@ -123,5 +136,13 @@ class CustomUser(AbstractUser):
         verbose_name = 'Người dùng'
         verbose_name_plural = 'Người dùng'
     
+    def check_2fa_code(self, code: str) -> bool:
+        """Kiểm tra mã 2FA bằng pyotp"""
+        import pyotp
+        if not self.two_factor_secret:
+            return False
+        totp = pyotp.TOTP(self.two_factor_secret)
+        return totp.verify(code)
+
     def __str__(self):
         return f"{self.email} ({self.get_role_display()})"

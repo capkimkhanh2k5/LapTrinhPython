@@ -1,9 +1,13 @@
+import secrets
+import requests
+from datetime import timedelta
+
 from pydantic import BaseModel, EmailStr
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
 
-from ..selectors.users import get_user_by_email
+from ..selectors.users import get_user_by_email, get_user_by_reset_token, get_user_by_verification_token
 from ..models import CustomUser
 
 
@@ -27,6 +31,51 @@ class AuthenticationError(Exception):
 
     def __str__(self):
         return self.message
+
+
+# Helper Functions
+
+def generate_tokens(user: CustomUser) -> dict:
+    """Helper tạo JWT tokens cho user"""
+    refresh = RefreshToken.for_user(user)
+    return {
+        'access_token': str(refresh.access_token),
+        'refresh_token': str(refresh),
+        'user': user
+    }
+
+
+def verify_social_token(provider: str, token: str) -> dict:
+    """
+    Xác thực token với Provider (Google/Facebook/LinkedIn)
+    Returns: dict chứa thông tin user từ provider
+    """
+
+    #TODO: Nếu lỗi Social -> kiểm tra tại đây
+    
+    if provider == 'google':
+        # URL xác thực token của Google
+        response = requests.get(f'https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}')
+        if response.status_code != 200:
+            raise AuthenticationError("Token Google không hợp lệ hoặc đã hết hạn!")
+        return response.json() # Chứa: email, name, picture, sub...
+        
+    elif provider == 'facebook':
+        # URL xác thực token của Facebook
+        response = requests.get(f'https://graph.facebook.com/me?fields=id,name,email,picture&access_token={token}')
+        if response.status_code != 200:
+            raise AuthenticationError("Token Facebook không hợp lệ hoặc đã hết hạn!")
+        return response.json()
+        
+    elif provider == 'linkedin':
+        # URL xác thực token của LinkedIn
+        headers = {'Authorization': f'Bearer {token}'}
+        response = requests.get('https://api.linkedin.com/v2/userinfo', headers=headers)
+        if response.status_code != 200:
+            raise AuthenticationError("Token LinkedIn không hợp lệ hoặc đã hết hạn!")
+        return response.json()
+        
+    raise AuthenticationError(f"Provider {provider} chưa được hỗ trợ!")
 
 
 # Service Functions
@@ -57,14 +106,7 @@ def login_user(data: LoginInput) -> dict:
     user.last_login = timezone.now()
     user.save(update_fields=["last_login"])
 
-    # Tạo JWT tokens
-    refresh = RefreshToken.for_user(user)
-    
-    return {
-        'access_token': str(refresh.access_token),
-        'refresh_token': str(refresh),
-        'user': user
-    }
+    return generate_tokens(user)
 
 
 def logout_user(data: LogoutInput) -> bool:
@@ -114,12 +156,213 @@ def register_user(data: RegisterInput) -> dict:
         role=data.role
     )
     
-    #Tạo JWT tokens
-    refresh_token = RefreshToken.for_user(user)
+    user.email_verification_token = secrets.token_urlsafe(32)
+    user.save(update_fields=["email_verification_token"])
+
+    # TODO: Gửi email chứa link verify (Hoàn thiện sau)
+    print(f"Verify email link: http://localhost:8000/verify-email/{user.email_verification_token}")
     
     #Return kết quả
-    return {    
-        'access_token': str(refresh_token.access_token),
-        'refresh_token': str(refresh_token),
-        'user': user
-    }
+    return generate_tokens(user)
+
+class ForgotPasswordInput(BaseModel):
+    email: EmailStr
+
+class ResetPasswordInput(BaseModel):
+    reset_token: str
+    new_password: str
+
+def forgot_password(data: ForgotPasswordInput) -> bool:
+    """
+    Quên mật khẩu
+
+    Returns:
+        bool: True nếu quên mật khẩu thành công
+    
+    Raises:
+        AuthenticationError nếu email không tồn tại
+    """
+    user = get_user_by_email(email=data.email)
+    if not user:
+        raise AuthenticationError("Email không tồn tại!")
+    
+    reset_token = secrets.token_urlsafe(32)
+    reset_expires = timezone.now() + timedelta(minutes = 5)
+    
+    user.password_reset_token = reset_token
+    user.password_reset_expires = reset_expires
+    user.save(update_fields=["password_reset_token", "password_reset_expires"])
+    
+    # TODO: Gửi email chứa link reset (Hoàn thiện sau)
+    print(f"Reset password link: http://localhost:8000/reset-password/{reset_token}")
+    
+    return True
+    
+def reset_password(data: ResetPasswordInput) -> bool:
+    """
+    Reset mật khẩu
+
+    Returns:
+        bool: True nếu reset mật khẩu thành công
+    
+    Raises:
+        AuthenticationError nếu token không hợp lệ hoặc hết hạn
+    """
+
+    user = get_user_by_reset_token(reset_token=data.reset_token)
+    if not user:
+        raise AuthenticationError("Token không hợp lệ!")
+    
+    if user.password_reset_expires < timezone.now():
+        raise AuthenticationError("Token đã hết hạn!")
+    
+    user.set_password(data.new_password)
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    user.save(update_fields=["password", "password_reset_token", "password_reset_expires"])
+    
+    return True
+
+
+class VerifyEmailInput(BaseModel):
+    token: str
+
+class ResendVerificationInput(BaseModel):
+    email: EmailStr
+
+def verify_email(data: VerifyEmailInput) -> bool:
+    """
+    Verify email
+
+    Returns:
+        bool: True nếu verify email thành công
+    
+    Raises:
+        AuthenticationError nếu token không hợp lệ
+    """
+    user = get_user_by_verification_token(token=data.token)
+    if not user:
+        raise AuthenticationError("Token không hợp lệ!")
+    
+    user.email_verified = True
+    user.email_verification_token = None
+    user.save(update_fields=["email_verified", "email_verification_token"])
+    
+    return True
+
+def resend_verification(data: ResendVerificationInput) -> bool:
+    """
+    Resend verification email
+
+    Returns:
+        bool: True nếu resend verification email thành công
+    
+    Raises:
+        AuthenticationError nếu email không tồn tại hoặc email đã được xác minh
+    """
+
+    user = get_user_by_email(email=data.email)
+    if not user:
+        raise AuthenticationError("Email không tồn tại!")
+    
+    if user.email_verified:
+        raise AuthenticationError("Email đã được xác minh!")
+    
+    user.email_verification_token = secrets.token_urlsafe(32)
+    user.save(update_fields=["email_verification_token"])
+
+    # TODO: Gửi email chứa link verify (Hoàn thiện sau)
+    print(f"Verify email link: http://localhost:8000/verify-email/{user.email_verification_token}")
+    
+    return True
+
+class ChangePasswordInput(BaseModel):
+    user_id: int
+    old_password: str
+    new_password: str
+
+class CheckEmailInput(BaseModel):
+    email: EmailStr
+
+def change_password(data: ChangePasswordInput) -> bool:
+    """
+    Thay đổi mật khẩu
+
+    Returns:
+        bool: True nếu thay đổi mật khẩu thành công
+    
+    Raises:
+        AuthenticationError nếu mật khẩu cũ không đúng
+    """
+    user = CustomUser.objects.get(id=data.user_id)
+
+    if not user.check_password(data.old_password):
+        raise AuthenticationError("Mật khẩu cũ không đúng!")
+
+    user.set_password(data.new_password)
+    user.save(update_fields=["password"])
+
+    return True
+
+def check_email(data: CheckEmailInput) -> dict:
+    """
+    Kiểm tra email tồn tại
+
+    Returns:
+        dict: {"exists": True/False}
+    """
+    user = get_user_by_email(email=data.email)
+    return {"exists": user is not None}
+
+class SocialLoginInput(BaseModel):
+    provider: str  # 'google', 'facebook', 'linkedin'
+    access_token: str  # Token nhận từ frontend
+    email: EmailStr  # Giả định frontend gửi kèm email
+    full_name: str
+    role: str = 'recruiter'
+
+class Verify2FAInput(BaseModel):
+    user_id: int
+    code: str
+    
+def social_login(data: SocialLoginInput) -> dict:
+    """
+    Đăng nhập với tài khoản xã hội
+    """
+    # Xác thực token với Provider để lấy thông tin thực tế
+    social_user_data = verify_social_token(data.provider, data.access_token)
+    
+    # Ưu tiên email từ provider để đảm bảo chính xác
+    email = social_user_data.get('email') or data.email
+    full_name = social_user_data.get('name') or social_user_data.get('full_name') or data.full_name
+    
+    user = get_user_by_email(email=email)
+    
+    # User không tồn tại thì tạo mới
+    if not user:
+        user = CustomUser.objects.create_user(
+            email=email,
+            password=None, # Social user không bắt buộc password
+            full_name=full_name,
+            role=data.role
+        )
+        # Tự động verify email cho social user
+        user.email_verified = True
+        user.save(update_fields=['email_verified'])
+    
+    return generate_tokens(user)
+    
+def verify_2fa(data: Verify2FAInput) -> bool:
+    """
+    Kiểm tra mã 2FA
+    """
+    user = CustomUser.objects.get(id=data.user_id)
+
+    if not user.two_factor_enabled:
+        raise AuthenticationError("Tài khoản chưa kích hoạt 2FA!")
+
+    if not user.check_2fa_code(data.code):
+        raise AuthenticationError("Mã 2FA không đúng!")
+    
+    return True
+        

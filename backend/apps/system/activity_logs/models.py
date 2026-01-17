@@ -57,6 +57,7 @@ class ActivityLog(models.Model):
     )
     
     class Meta:
+        app_label = 'system_activity_logs'
         db_table = 'activity_logs'
         verbose_name = 'Nhật ký hoạt động'
         verbose_name_plural = 'Nhật ký hoạt động'

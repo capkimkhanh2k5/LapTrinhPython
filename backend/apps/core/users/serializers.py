@@ -4,7 +4,7 @@ from .models import CustomUser
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'role', 'status', 'email_verified', 'password', 'last_login']
+        fields = ['id', 'email', 'full_name', 'role', 'status', 'email_verified', 'password', 'last_login', 'phone', 'avatar_url']
         extra_kwargs = {
             'password': {'write_only': True},
             'last_login': {'read_only': True}
@@ -103,3 +103,17 @@ class SocialAuthSerializer(serializers.Serializer):
 
 class Verify2FASerializer(serializers.Serializer):
     code = serializers.CharField(max_length=6, min_length=6)
+
+class UserUpdateSerializer(serializers.Serializer):
+    full_name = serializers.CharField(max_length=255, required=False)
+    phone = serializers.CharField(max_length=20, required=False)
+    avatar_url = serializers.URLField(max_length=500, required=False)
+
+class UserStatusSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=CustomUser.Status.values)
+
+class UserRoleSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=CustomUser.Role.values)
+
+class UserAvatarSerializer(serializers.Serializer):
+    avatar = serializers.ImageField()

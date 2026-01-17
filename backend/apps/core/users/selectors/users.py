@@ -1,8 +1,12 @@
-from apps.users.models import User
 from typing import Iterable
+from ..models import CustomUser
 
-def get_user(*, email: str) -> User | None:
-    return User.objects.filter(email=email).first()
 
-def list_users() -> Iterable[User]:
-    return User.objects.all()
+def list_users() -> Iterable[CustomUser]:
+    """Lấy toàn bộ users"""
+    return CustomUser.objects.all()
+
+
+def get_user_by_email(*, email: str) -> CustomUser | None:
+    """Lấy user theo email để authenticate"""
+    return CustomUser.objects.filter(email=email).first()

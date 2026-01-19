@@ -9,38 +9,38 @@ class RecruiterEducation(models.Model):
         on_delete=models.CASCADE,
         related_name='education',
         db_index=True,
-        verbose_name='Ứng viên'
+        verbose_name='Recruiter'
     )
     school_name = models.CharField(
         max_length=255,
-        verbose_name='Tên trường'
+        verbose_name='School name'
     )
     degree = models.CharField(
         max_length=100,
         null=True,
         blank=True,
-        verbose_name='Bằng cấp'
+        verbose_name='Degree'
     )
     field_of_study = models.CharField(
         max_length=100,
         null=True,
         blank=True,
-        verbose_name='Chuyên ngành'
+        verbose_name='Field of study'
     )
     start_date = models.DateField(
         null=True,
         blank=True,
         db_index=True,
-        verbose_name='Ngày bắt đầu'
+        verbose_name='Start date'
     )
     end_date = models.DateField(
         null=True,
         blank=True,
-        verbose_name='Ngày kết thúc'
+        verbose_name='End date'
     )
     is_current = models.BooleanField(
         default=False,
-        verbose_name='Đang học'
+        verbose_name='Is current'
     )
     gpa = models.DecimalField(
         max_digits=3,
@@ -52,25 +52,25 @@ class RecruiterEducation(models.Model):
     description = models.TextField(
         null=True,
         blank=True,
-        verbose_name='Mô tả'
+        verbose_name='Description'
     )
     display_order = models.IntegerField(
         default=0,
-        verbose_name='Thứ tự hiển thị'
+        verbose_name='Display order'
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
-        verbose_name='Ngày tạo'
+        verbose_name='Created at'
     )
     updated_at = models.DateTimeField(
         auto_now=True,
-        verbose_name='Ngày cập nhật'
+        verbose_name='Updated at'
     )
     
     class Meta:
         db_table = 'recruiter_education'
-        verbose_name = 'Học vấn'
-        verbose_name_plural = 'Học vấn'
+        verbose_name = 'Recruiter education'
+        verbose_name_plural = 'Recruiter education'
         ordering = ['-start_date', 'display_order']
     
     def __str__(self):

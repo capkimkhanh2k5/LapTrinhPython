@@ -40,6 +40,10 @@ urlpatterns = [
     
     # Recruiter app routes
     path('api/recruiters/', include('apps.candidate.recruiters.urls')),
+    # Recruiter Education nested routes
+    path('api/recruiters/<int:recruiter_id>/education/', include('apps.candidate.recruiter_education.urls')),
+    # Recruiter Experience nested routes
+    path('api/recruiters/<int:recruiter_id>/experience/', include('apps.candidate.recruiter_experience.urls')),
     
     # JWT Token endpoints (built-in)
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

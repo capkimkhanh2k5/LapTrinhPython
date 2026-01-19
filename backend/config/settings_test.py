@@ -39,6 +39,12 @@ INSTALLED_APPS = [
     # System Domain (FK dependencies cho Activity Logs)
     'apps.system.activity_logs',
     'apps.system.activity_log_types',
+    # Candidate Domain (recruiters, education, experience)
+    'apps.candidate.recruiters',
+    'apps.candidate.recruiter_education',
+    'apps.candidate.recruiter_experience',
+    # Social Domain (follower dependencies)
+    'apps.social.company_followers',
 ]
 
 MIDDLEWARE = [

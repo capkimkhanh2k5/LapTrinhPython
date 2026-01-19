@@ -26,7 +26,7 @@ class CertificationInput(BaseModel):
 
 
 @transaction.atomic
-def create_certification_service(recruiter: Recruiter, data: CertificationInput) -> RecruiterCertification:
+def create_certification(recruiter: Recruiter, data: CertificationInput) -> RecruiterCertification:
     """
     Tạo chứng chỉ mới cho recruiter.
     Auto set display_order = max + 1
@@ -49,7 +49,7 @@ def create_certification_service(recruiter: Recruiter, data: CertificationInput)
 
 
 @transaction.atomic
-def update_certification_service(certification: RecruiterCertification, data: CertificationInput) -> RecruiterCertification:
+def update_certification(certification: RecruiterCertification, data: CertificationInput) -> RecruiterCertification:
     """
     Cập nhật thông tin chứng chỉ.
     """
@@ -63,7 +63,7 @@ def update_certification_service(certification: RecruiterCertification, data: Ce
 
 
 @transaction.atomic
-def delete_certification_service(certification: RecruiterCertification) -> None:
+def delete_certification(certification: RecruiterCertification) -> None:
     """
     Xóa chứng chỉ.
     """
@@ -71,7 +71,7 @@ def delete_certification_service(certification: RecruiterCertification) -> None:
 
 
 @transaction.atomic
-def reorder_certification_service(recruiter: Recruiter, order_data: list) -> None:
+def reorder_certification(recruiter: Recruiter, order_data: list) -> None:
     """
     Sắp xếp lại thứ tự hiển thị.
     Input: [{'id': 1, 'display_order': 0}, ...]

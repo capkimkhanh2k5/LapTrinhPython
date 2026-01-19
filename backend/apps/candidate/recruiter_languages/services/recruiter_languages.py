@@ -21,7 +21,7 @@ class LanguageInput(BaseModel):
 
 
 @transaction.atomic
-def create_language_service(recruiter: Recruiter, data: LanguageInput) -> RecruiterLanguage:
+def create_language(recruiter: Recruiter, data: LanguageInput) -> RecruiterLanguage:
     """
     Thêm ngôn ngữ mới cho recruiter.
     
@@ -49,7 +49,7 @@ def create_language_service(recruiter: Recruiter, data: LanguageInput) -> Recrui
 
 
 @transaction.atomic
-def update_language_service(recruiter_language: RecruiterLanguage, data: LanguageInput) -> RecruiterLanguage:
+def update_language(recruiter_language: RecruiterLanguage, data: LanguageInput) -> RecruiterLanguage:
     """
     Cập nhật thông tin ngôn ngữ.
     Không cho phép update language_id.
@@ -68,7 +68,7 @@ def update_language_service(recruiter_language: RecruiterLanguage, data: Languag
 
 
 @transaction.atomic
-def delete_language_service(recruiter_language: RecruiterLanguage) -> None:
+def delete_language(recruiter_language: RecruiterLanguage) -> None:
     """
     Xóa ngôn ngữ của recruiter.
     """

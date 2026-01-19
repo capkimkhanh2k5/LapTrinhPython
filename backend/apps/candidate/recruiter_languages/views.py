@@ -9,9 +9,9 @@ from .serializers import (
     RecruiterLanguageUpdateSerializer
 )
 from .services.recruiter_languages import (
-    create_language_service,
-    update_language_service,
-    delete_language_service,
+    create_language,
+    update_language,
+    delete_language,
     LanguageInput
 )
 from .selectors.recruiter_languages import (
@@ -84,7 +84,7 @@ class RecruiterLanguageViewSet(viewsets.GenericViewSet):
         
         try:
             input_data = LanguageInput(**serializer.validated_data)
-            language = create_language_service(recruiter, input_data)
+            language = create_language(recruiter, input_data)
             return Response(
                 RecruiterLanguageSerializer(language).data, 
                 status=status.HTTP_201_CREATED
@@ -145,7 +145,7 @@ class RecruiterLanguageViewSet(viewsets.GenericViewSet):
         
         try:
             input_data = LanguageInput(**serializer.validated_data)
-            updated = update_language_service(language, input_data)
+            updated = update_language(language, input_data)
             return Response(RecruiterLanguageSerializer(updated).data)
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -175,5 +175,5 @@ class RecruiterLanguageViewSet(viewsets.GenericViewSet):
         if permission_error:
             return permission_error
         
-        delete_language_service(language)
+        delete_language(language)
         return Response(status=status.HTTP_204_NO_CONTENT)

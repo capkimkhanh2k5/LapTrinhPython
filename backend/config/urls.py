@@ -50,6 +50,8 @@ urlpatterns = [
     path('api/recruiters/<int:recruiter_id>/certifications/', include('apps.candidate.recruiter_certifications.urls')),
     # Recruiter Languages nested routes
     path('api/recruiters/<int:recruiter_id>/languages/', include('apps.candidate.recruiter_languages.urls')),
+    # Recruiter Projects nested routes
+    path('api/recruiters/<int:recruiter_id>/projects/', include('apps.candidate.recruiter_projects.urls')),
     
     # Languages public routes
     path('api/languages/', include('apps.candidate.languages.urls')),

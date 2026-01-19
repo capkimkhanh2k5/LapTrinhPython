@@ -11,10 +11,10 @@ from .serializers import (
     CertificationReorderSerializer
 )
 from .services.recruiter_certifications import (
-    create_certification_service,
-    update_certification_service,
-    delete_certification_service,
-    reorder_certification_service,
+    create_certification,
+    update_certification,
+    delete_certification,
+    reorder_certification,
     CertificationInput
 )
 from .selectors.recruiter_certifications import (
@@ -87,7 +87,7 @@ class RecruiterCertificationViewSet(viewsets.GenericViewSet):
         
         try:
             input_data = CertificationInput(**serializer.validated_data)
-            certification = create_certification_service(recruiter, input_data)
+            certification = create_certification(recruiter, input_data)
             return Response(
                 CertificationSerializer(certification).data, 
                 status=status.HTTP_201_CREATED
@@ -148,7 +148,7 @@ class RecruiterCertificationViewSet(viewsets.GenericViewSet):
         
         try:
             input_data = CertificationInput(**serializer.validated_data)
-            updated = update_certification_service(certification, input_data)
+            updated = update_certification(certification, input_data)
             return Response(CertificationSerializer(updated).data)
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -178,7 +178,7 @@ class RecruiterCertificationViewSet(viewsets.GenericViewSet):
         if permission_error:
             return permission_error
         
-        delete_certification_service(certification)
+        delete_certification(certification)
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     @action(detail=False, methods=['patch'], url_path='reorder')
@@ -198,7 +198,7 @@ class RecruiterCertificationViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         
         try:
-            reorder_certification_service(recruiter, serializer.validated_data['order'])
+            reorder_certification(recruiter, serializer.validated_data['order'])
             queryset = list_certifications_by_recruiter(recruiter_id)
             return Response(CertificationSerializer(queryset, many=True).data)
         except ValueError as e:

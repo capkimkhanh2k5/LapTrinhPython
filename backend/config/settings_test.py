@@ -39,13 +39,14 @@ INSTALLED_APPS = [
     # System Domain (FK dependencies cho Activity Logs)
     'apps.system.activity_logs',
     'apps.system.activity_log_types',
-    # Candidate Domain (recruiters, education, experience, skills, certifications, languages)
+    # Candidate Domain (recruiters, education, experience, skills, certifications, languages, projects)
     'apps.candidate.recruiters',
     'apps.candidate.recruiter_education',
     'apps.candidate.recruiter_experience',
     'apps.candidate.recruiter_skills',
     'apps.candidate.recruiter_certifications',
     'apps.candidate.recruiter_languages',
+    'apps.candidate.recruiter_projects',
     'apps.candidate.skills',
     'apps.candidate.languages',
     # Social Domain (follower dependencies)

@@ -1,0 +1,1570 @@
+{
+    "info": {
+        "_postman_id": "module3-recruiter",
+        "name": "Module 3: Recruiter Management",
+        "description": "API Recruiter (Candidate) Management - 47 endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "3.1 Recruiter Profile",
+            "item": [
+                {
+                    "name": "Create Recruiter Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('recruiter_id', json.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Software Engineer\",\n  \"summary\": \"Experienced developer\",\n  \"job_search_status\": \"actively_looking\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Recruiter Profile",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Recruiter Profile",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Senior Software Engineer\",\n  \"summary\": \"10+ years experience\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Recruiter Profile",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Job Search Status",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"open_to_offers\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/job-search-status",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "job-search-status"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Profile Completeness",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/profile-completeness",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "profile-completeness"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Upload Avatar",
+                    "request": {
+                        "method": "POST",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "avatar",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/avatar",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "avatar"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Public Profile",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/public-profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "public-profile"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Privacy Settings",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"show_email\": false,\n  \"show_phone\": false\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/privacy",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "privacy"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Recruiter Stats",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/stats",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "stats"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Search Recruiters",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/search?q=developer&skills=&location=",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "developer"
+                                },
+                                {
+                                    "key": "skills",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "location",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Verify Phone",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phone\": \"+84123456789\",\n  \"code\": \"123456\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/verify-phone",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "verify-phone"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Matching Jobs",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/matching-jobs?limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "matching-jobs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Applications",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/applications?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "applications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Saved Jobs",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/saved-jobs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "saved-jobs"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3.2 Education",
+            "item": [
+                {
+                    "name": "List Education",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/education",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "education"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Education",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"school\": \"MIT\",\n  \"degree\": \"Bachelor\",\n  \"field_of_study\": \"Computer Science\",\n  \"start_date\": \"2015-09-01\",\n  \"end_date\": \"2019-06-01\",\n  \"is_current\": false\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/education",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "education"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Education",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"school\": \"MIT\",\n  \"degree\": \"Master\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/education/:eduId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "education",
+                                ":eduId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "eduId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Education",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/education/:eduId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "education",
+                                ":eduId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "eduId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Reorder Education",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"order\": [2, 1, 3]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/education/reorder",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "education",
+                                "reorder"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3.3 Experience",
+            "item": [
+                {
+                    "name": "List Experience",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/experience",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "experience"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Experience",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"company\": \"Google\",\n  \"title\": \"Software Engineer\",\n  \"location\": \"Mountain View, CA\",\n  \"start_date\": \"2019-07-01\",\n  \"is_current\": true,\n  \"description\": \"Working on search algorithms\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/experience",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "experience"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Experience",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Senior Software Engineer\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/experience/:expId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "experience",
+                                ":expId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "expId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Experience",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/experience/:expId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "experience",
+                                ":expId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "expId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Reorder Experience",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"order\": [2, 1]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/experience/reorder",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "experience",
+                                "reorder"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3.4 Skills",
+            "item": [
+                {
+                    "name": "List Skills",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/skills",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "skills"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Skill",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"skill_id\": 1,\n  \"proficiency_level\": \"expert\",\n  \"years_of_experience\": 5\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/skills",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "skills"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Skill",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"proficiency_level\": \"advanced\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/skills/:skillId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "skills",
+                                ":skillId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "skillId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Skill",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/skills/:skillId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "skills",
+                                ":skillId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "skillId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Bulk Add Skills",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"skills\": [\n    {\"skill_id\": 1, \"proficiency_level\": \"expert\"},\n    {\"skill_id\": 2, \"proficiency_level\": \"intermediate\"}\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/skills/bulk-add",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "skills",
+                                "bulk-add"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Endorse Skill",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/skills/:skillId/endorse",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "skills",
+                                ":skillId",
+                                "endorse"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "skillId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Remove Endorsement",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/skills/:skillId/endorse",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "skills",
+                                ":skillId",
+                                "endorse"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "skillId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3.5 Certifications",
+            "item": [
+                {
+                    "name": "List Certifications",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/certifications",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "certifications"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Certification",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"AWS Solutions Architect\",\n  \"issuing_organization\": \"Amazon\",\n  \"issue_date\": \"2023-01-15\",\n  \"expiration_date\": \"2026-01-15\",\n  \"credential_id\": \"AWS-SAA-123\",\n  \"credential_url\": \"https://aws.amazon.com/verify/123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/certifications",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "certifications"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Certification",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"AWS Solutions Architect Professional\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/certifications/:certId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "certifications",
+                                ":certId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "certId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Certification",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/certifications/:certId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "certifications",
+                                ":certId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "certId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Reorder Certifications",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"order\": [2, 1, 3]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/certifications/reorder",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "certifications",
+                                "reorder"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3.6 Languages",
+            "item": [
+                {
+                    "name": "List Languages (Recruiter)",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/languages",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "languages"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Language",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"language_id\": 1,\n  \"proficiency\": \"fluent\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/languages",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "languages"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Language",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"proficiency\": \"native\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/languages/:langId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "languages",
+                                ":langId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "langId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Language",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/languages/:langId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "languages",
+                                ":langId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "langId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List All Languages",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/languages",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "languages"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3.7 Projects",
+            "item": [
+                {
+                    "name": "List Projects",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/projects",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "projects"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Project",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"E-commerce Platform\",\n  \"description\": \"Built a full-stack e-commerce platform\",\n  \"url\": \"https://github.com/user/project\",\n  \"start_date\": \"2023-01-01\",\n  \"end_date\": \"2023-06-01\",\n  \"is_current\": false\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/projects",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "projects"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Project",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"E-commerce Platform v2\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/projects/:projectId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "projects",
+                                ":projectId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "projectId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Project",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/projects/:projectId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "projects",
+                                ":projectId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "projectId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Reorder Projects",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"order\": [2, 1, 3]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/projects/reorder",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "projects",
+                                "reorder"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,576 @@
+{
+    "info": {
+        "_postman_id": "module7-cvbuilder",
+        "name": "Module 7: CV Builder",
+        "description": "API CV Builder - 18 endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "7.1 CV Templates",
+            "item": [
+                {
+                    "name": "List CV Templates",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/cv-templates?page=1&limit=10&category=",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cv-templates"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "category",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get CV Template Detail",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/cv-templates/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cv-templates",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Template Categories",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/cv-templates/categories",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cv-templates",
+                                "categories"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Premium Templates",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/cv-templates/premium",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cv-templates",
+                                "premium"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Popular Templates",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/cv-templates/popular",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cv-templates",
+                                "popular"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create CV Template (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Modern Professional\",\n  \"category\": \"professional\",\n  \"is_premium\": false,\n  \"template_data\": {}\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/cv-templates",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cv-templates"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update CV Template",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Modern Professional v2\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/cv-templates/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cv-templates",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete CV Template",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/cv-templates/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cv-templates",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "7.2 Recruiter CVs",
+            "item": [
+                {
+                    "name": "List My CVs",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/cvs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "cvs"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create CV",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('cv_id', json.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"template_id\": 1,\n  \"name\": \"My Professional CV\",\n  \"data\": {}\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/cvs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "cvs"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get CV Detail",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/cvs/:cvId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "cvs",
+                                ":cvId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "cvId",
+                                    "value": "{{cv_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update CV",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Updated CV Name\",\n  \"data\": {}\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/cvs/:cvId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "cvs",
+                                ":cvId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "cvId",
+                                    "value": "{{cv_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete CV",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/cvs/:cvId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "cvs",
+                                ":cvId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "cvId",
+                                    "value": "{{cv_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Set Default CV",
+                    "request": {
+                        "method": "PATCH",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/cvs/:cvId/default",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "cvs",
+                                ":cvId",
+                                "default"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "cvId",
+                                    "value": "{{cv_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Download CV",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"format\": \"pdf\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/cvs/:cvId/download",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "cvs",
+                                ":cvId",
+                                "download"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "cvId",
+                                    "value": "{{cv_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Preview CV",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/cvs/:cvId/preview",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "cvs",
+                                ":cvId",
+                                "preview"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "cvId",
+                                    "value": "{{cv_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update CV Privacy",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"is_public\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/cvs/:cvId/privacy",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "cvs",
+                                ":cvId",
+                                "privacy"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                },
+                                {
+                                    "key": "cvId",
+                                    "value": "{{cv_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Auto Generate CV",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"template_id\": 1\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/cvs/generate",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "cvs",
+                                "generate"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,620 @@
+{
+    "info": {
+        "_postman_id": "module6-interview",
+        "name": "Module 6: Interview Management",
+        "description": "API Interview Management - 19 endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "6.1 Interview Scheduling",
+            "item": [
+                {
+                    "name": "Create Interview",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('interview_id', json.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"application_id\": \"{{application_id}}\",\n  \"interview_type_id\": 1,\n  \"scheduled_at\": \"2026-02-15T10:00:00Z\",\n  \"duration_minutes\": 60,\n  \"location\": \"Conference Room A\",\n  \"notes\": \"Technical interview round\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interviews",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Interview Detail",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Interview",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"location\": \"Conference Room B\",\n  \"notes\": \"Updated notes\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Interview",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Reschedule Interview",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"scheduled_at\": \"2026-02-20T14:00:00Z\",\n  \"reason\": \"Calendar conflict\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id/reschedule",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id",
+                                "reschedule"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Cancel Interview",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"Position filled\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id/cancel",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id",
+                                "cancel"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Complete Interview",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"outcome\": \"passed\",\n  \"notes\": \"Great interview\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id/complete",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id",
+                                "complete"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Interview Feedback",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rating\": 4,\n  \"strengths\": \"Strong technical skills\",\n  \"weaknesses\": \"Communication could improve\",\n  \"recommendation\": \"hire\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id/feedback",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id",
+                                "feedback"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Application Interviews",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/applications/:id/interviews",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "applications",
+                                ":id",
+                                "interviews"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{application_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Interview Calendar",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/interviews/calendar?start_date=2026-01-01&end_date=2026-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                "calendar"
+                            ],
+                            "query": [
+                                {
+                                    "key": "start_date",
+                                    "value": "2026-01-01"
+                                },
+                                {
+                                    "key": "end_date",
+                                    "value": "2026-01-31"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Upcoming Interviews",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/interviews/upcoming?limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                "upcoming"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Send Reminder",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id/send-reminder",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id",
+                                "send-reminder"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "6.2 Interview Interviewers",
+            "item": [
+                {
+                    "name": "List Interviewers",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id/interviewers",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id",
+                                "interviewers"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Interviewer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"user_id\": 1,\n  \"role\": \"technical\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id/interviewers",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id",
+                                "interviewers"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Remove Interviewer",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id/interviewers/:userId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id",
+                                "interviewers",
+                                ":userId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                },
+                                {
+                                    "key": "userId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Interviewer Feedback",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rating\": 4,\n  \"comments\": \"Strong candidate\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interviews/:id/interviewers/:userId/feedback",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interviews",
+                                ":id",
+                                "interviewers",
+                                ":userId",
+                                "feedback"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{interview_id}}"
+                                },
+                                {
+                                    "key": "userId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "6.3 Interview Types",
+            "item": [
+                {
+                    "name": "List Interview Types",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/interview-types",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interview-types"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Interview Type",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Technical Interview\",\n  \"description\": \"Coding and system design\",\n  \"default_duration\": 60\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interview-types",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interview-types"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Interview Type",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Technical Interview v2\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/interview-types/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "interview-types",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

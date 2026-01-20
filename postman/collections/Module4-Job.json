@@ -1,0 +1,1069 @@
+{
+    "info": {
+        "_postman_id": "module4-job",
+        "name": "Module 4: Job Management",
+        "description": "API Job Management - 36 endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "4.1 Job Posting",
+            "item": [
+                {
+                    "name": "Create Job",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('job_id', json.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Senior Software Engineer\",\n  \"description\": \"We are looking for...\",\n  \"company_id\": \"{{company_id}}\",\n  \"category_id\": 1,\n  \"employment_type\": \"full_time\",\n  \"experience_level\": \"senior\",\n  \"salary_min\": 2000,\n  \"salary_max\": 4000,\n  \"salary_currency\": \"USD\",\n  \"is_salary_visible\": true,\n  \"remote_type\": \"hybrid\",\n  \"deadline\": \"2026-03-01\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/jobs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Jobs",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs?page=1&limit=10&category_id=&employment_type=&remote_type=&experience_level=",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "category_id",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "employment_type",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "remote_type",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "experience_level",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Job Detail",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Job by Slug",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/slug/:slug",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                "slug",
+                                ":slug"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "slug",
+                                    "value": "senior-software-engineer"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Job",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Lead Software Engineer\",\n  \"salary_max\": 5000\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Job",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Change Job Status",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"published\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/status",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "status"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Publish Job",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/publish",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "publish"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Close Job",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/close",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "close"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Duplicate Job",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/duplicate",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "duplicate"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Job Applications",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/applications?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "applications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Job Stats",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/stats",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "stats"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Search Jobs",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/search?q=developer&location=&salary_min=&salary_max=",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "developer"
+                                },
+                                {
+                                    "key": "location",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "salary_min",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "salary_max",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Featured Jobs",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/featured?limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                "featured"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Urgent Jobs",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/urgent?limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                "urgent"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Similar Jobs",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/similar/:id?limit=5",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                "similar",
+                                ":id"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Job Recommendations",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/recommendations?limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                "recommendations"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Record Job View",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/view",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "view"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Feature Job",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/feature",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "feature"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Unfeature Job",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/feature",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "feature"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4.2 Job Skills",
+            "item": [
+                {
+                    "name": "List Job Skills",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/skills",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "skills"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Job Skill",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"skill_id\": 1,\n  \"is_required\": true,\n  \"proficiency_level\": \"intermediate\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/skills",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "skills"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Job Skill",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"is_required\": false\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/skills/:skillId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "skills",
+                                ":skillId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                },
+                                {
+                                    "key": "skillId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Job Skill",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/skills/:skillId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "skills",
+                                ":skillId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                },
+                                {
+                                    "key": "skillId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4.3 Job Locations",
+            "item": [
+                {
+                    "name": "List Job Locations",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/locations",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "locations"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Job Location",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"address_id\": 1,\n  \"is_primary\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/locations",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "locations"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Job Location",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"is_primary\": false\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/locations/:locationId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "locations",
+                                ":locationId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                },
+                                {
+                                    "key": "locationId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Job Location",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/locations/:locationId",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "locations",
+                                ":locationId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                },
+                                {
+                                    "key": "locationId",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4.4 Saved Jobs",
+            "item": [
+                {
+                    "name": "Get Saved Jobs",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/saved-jobs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "saved-jobs"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Save Job",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/save",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "save"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Unsave Job",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/unsave",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "unsave"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Check If Saved",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/is-saved",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "is-saved"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Saved Job",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"folder\": \"favorites\",\n  \"notes\": \"Great opportunity\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/saved-jobs/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "saved-jobs",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4.5 Job Views Analytics",
+            "item": [
+                {
+                    "name": "Get Job Views",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/views?period=30d",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "views"
+                            ],
+                            "query": [
+                                {
+                                    "key": "period",
+                                    "value": "30d"
+                                }
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Views Chart",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/views/chart?period=30d",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "views",
+                                "chart"
+                            ],
+                            "query": [
+                                {
+                                    "key": "period",
+                                    "value": "30d"
+                                }
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Viewer Demographics",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/viewer-demographics",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "viewer-demographics"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

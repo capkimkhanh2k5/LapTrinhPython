@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import JobApplicationViewSet, ApplicationViewSet
+from apps.assessment.test_results.views import ApplicationTestResultsView
 
 # Router cho ApplicationViewSet (flat routes)
 router = DefaultRouter()
@@ -28,7 +29,9 @@ urlpatterns = [
     path('<int:pk>/offer/', ApplicationViewSet.as_view({'post': 'offer'}), name='application-offer'),
     path('<int:pk>/withdraw/', ApplicationViewSet.as_view({'post': 'applicant_withdraw'}), name='application-withdraw'),
     path('<int:pk>/interviews/', ApplicationViewSet.as_view({'get': 'list_interviews'}), name='application-interviews'),
+    path('<int:application_id>/test-results/', ApplicationTestResultsView.as_view({'get': 'list'}), name='application-test-results'),
     # Standard router routes LAST
     path('', include(router.urls)),
 ]
+
 

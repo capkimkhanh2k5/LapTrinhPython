@@ -1,4 +1,4 @@
-Django==6.0.1
+Django>=5.2.0,<6.0
 djangorestframework>=3.15.0
 django-cors-headers>=4.3.1
 djangorestframework-simplejwt>=5.3.1
@@ -15,3 +15,10 @@ django-filter>=24.2
 
 django-cloudinary-storage>=0.3.0
 cloudinary>=1.36.0
+
+# Real-time (WebSocket + SSE)
+channels>=4.0.0
+channels-redis>=4.2.0
+daphne>=4.1.0
+django-eventstream>=5.3.0
+redis>=5.0.0

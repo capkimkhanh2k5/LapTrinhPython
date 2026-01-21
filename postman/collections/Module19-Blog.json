@@ -1,0 +1,366 @@
+{
+    "info": {
+        "_postman_id": "module19-blog",
+        "name": "Module 19: Blog & Content",
+        "description": "API Blog & Content - 12 endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "19.1 Blog Posts",
+            "item": [
+                {
+                    "name": "List Blog Posts",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/blog/posts?page=1&status=published",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "posts"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "published"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Post by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('blog_post_id', json.id);",
+                                    "if (json.slug) pm.environment.set('blog_post_slug', json.slug);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/blog/posts/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "posts",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{blog_post_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Post by Slug",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/blog/posts/slug/:slug",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "posts",
+                                "slug",
+                                ":slug"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "slug",
+                                    "value": "{{blog_post_slug}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Blog Post",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('blog_post_id', json.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Top 10 Tips for Job Seekers\",\n  \"slug\": \"top-10-tips-job-seekers\",\n  \"summary\": \"Essential tips for landing your dream job\",\n  \"content\": \"<p>Here are the top 10 tips...</p>\",\n  \"category_id\": 1,\n  \"tags\": [\"career\", \"tips\"],\n  \"status\": \"draft\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/blog/posts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "posts"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Blog Post",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Updated Title\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/blog/posts/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "posts",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{blog_post_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Blog Post",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/blog/posts/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "posts",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{blog_post_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Publish Blog Post",
+                    "request": {
+                        "method": "PATCH",
+                        "url": {
+                            "raw": "{{base_url}}/blog/posts/:id/publish",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "posts",
+                                ":id",
+                                "publish"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{blog_post_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Featured Posts",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/blog/posts/featured",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "posts",
+                                "featured"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Related Posts",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/blog/posts/related/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "posts",
+                                "related",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{blog_post_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Record Post View",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/blog/posts/:id/view",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "posts",
+                                ":id",
+                                "view"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{blog_post_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "19.2 Categories & Tags",
+            "item": [
+                {
+                    "name": "Get Blog Categories",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/blog/categories",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "categories"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Blog Tags",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/blog/tags",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "blog",
+                                "tags"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -18,13 +18,13 @@ def validate_image_file(file: UploadedFile, max_size_mb: int = 2) -> None:
     - Kiểm tra kích thước file
     """
     if not file:
-        raise ValueError("File không được cung cấp")
+        raise ValueError("File is not provided")
     
     if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise ValueError("Loại file không hợp lệ. Chỉ chấp nhận: JPEG, PNG, GIF, WEBP")
+        raise ValueError("File type is not allowed. Only JPEG, PNG, GIF, WEBP are allowed")
     
     if file.size > max_size_mb * 1024 * 1024:
-        raise ValueError(f"File quá lớn. Tối đa {max_size_mb}MB")
+        raise ValueError(f"File size excess max size. MAX {max_size_mb}MB")
 
 
 def save_company_file(company_id: int, file: UploadedFile, file_type: str, resource_type: str = 'auto') -> str:
@@ -78,3 +78,29 @@ def delete_company_file(file_url: str, resource_type: str = 'image') -> bool:
         return result.get('result') == 'ok'
     except Exception:
         return False
+
+
+def save_raw_file(folder: str, file, prefix: str) -> str:
+    """
+    Upload raw file (PDF, CSV, etc.) lên Cloudinary
+    
+    Args:
+        folder: Thư mục lưu trữ trên Cloudinary (vd: 'referrals/cvs', 'reports')
+        file: File upload (UploadedFile hoặc bytes-like object)
+        prefix: Tiền tố cho tên file (vd: 'cv', 'report_revenue')
+    
+    Returns:
+        URL của file đã upload
+    """
+    public_id = f"{folder}/{prefix}_{int(time.time())}"
+    try:
+        result = cloudinary.uploader.upload(
+            file,
+            public_id=public_id,
+            resource_type='raw',
+            overwrite=True
+        )
+        return result['secure_url']
+    except Exception as e:
+        raise ValueError(f"Upload raw file failed: {str(e)}")
+

@@ -25,8 +25,15 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-    # Core (chỉ test users)
+    # Core 
     'apps.core.users',
+    # Blog Domain
+    'apps.blog',
+    # 'apps.blog.blog_posts',
+    # 'apps.blog.blog_categories',
+    # 'apps.blog.blog_tags',
+    # 'apps.blog.blog_post_tags',
+    # 'apps.blog.blog_comments',
     # Company Domain (cho company tests)
     'apps.company.companies',
     'apps.company.industries',
@@ -41,6 +48,17 @@ INSTALLED_APPS = [
     # System Domain (FK dependencies cho Activity Logs)
     'apps.system.activity_logs',
     'apps.system.activity_log_types',
+    'apps.system.system_settings',
+    'apps.system.file_uploads',
+    'apps.analytics',
+    # 'apps.system.analytics_reports',
+    # 'apps.system.analytics_daily_statistics',
+    # 'apps.system.report_types',
+    # 'apps.system.reports',
+    'apps.system.audit_logs',
+    'apps.system.search_history',
+    'apps.system.faqs',
+    'apps.system.job_search_history',
     # Candidate Domain (recruiters, education, experience, skills, certifications, languages, projects)
     'apps.candidate.recruiters',
     'apps.candidate.recruiter_education',
@@ -52,14 +70,21 @@ INSTALLED_APPS = [
     'apps.candidate.skill_categories',
     'apps.candidate.skills',
     'apps.candidate.languages',
-    # Social Domain (follower dependencies)
+    # Social Domain (full - for Module 12)
     'apps.social.company_followers',
     'apps.social.skill_endorsements',
+    'apps.social.reviews',
+    'apps.social.review_reactions',
+    'apps.social.recruiter_connections',
+    'apps.social.recommendations',
     # Recruitment Domain (jobs)
     'apps.recruitment.jobs',
     'apps.recruitment.job_categories',
     'apps.recruitment.applications',
     'apps.recruitment.application_status_history',
+    'apps.recruitment.campaigns',
+    'apps.recruitment.referrals',
+    'apps.billing',
     'apps.recruitment.job_skills',
     'apps.recruitment.job_locations',
     'apps.recruitment.saved_jobs',
@@ -71,6 +96,19 @@ INSTALLED_APPS = [
     'apps.candidate.cv_templates',
     'apps.candidate.cv_template_categories',
     'apps.candidate.recruiter_cvs',
+    # Assessment Domain (for AI Matching)
+    'apps.assessment.assessment_categories',
+    'apps.assessment.assessment_tests',
+    'apps.assessment.test_results',
+    'apps.assessment.ai_matching_scores',
+    'apps.assessment.job_assessment_requirements',
+    'apps.email',
+    'apps.communication.notifications',
+    'apps.communication.notification_types',
+    'apps.communication.messages',
+    'apps.communication.message_threads',
+    'apps.communication.message_participants',
+    'apps.communication.job_alerts',
 ]
 
 MIDDLEWARE = [

@@ -1,4 +1,9 @@
 from django.db import models
+from apps.candidate.recruiters.models import Recruiter
+from apps.recruitment.job_categories.models import JobCategory
+from apps.geography.provinces.models import Province
+from apps.candidate.skills.models import Skill
+from apps.recruitment.jobs.models import Job
 
 
 class JobAlert(models.Model):
@@ -26,8 +31,9 @@ class JobAlert(models.Model):
         MANAGER = 'manager', 'Manager'
         DIRECTOR = 'director', 'Director'
     
+    # "Recruiter" ở đây là Candidate/Người tìm việc (theo naming convention của dự án)
     recruiter = models.ForeignKey(
-        'candidate_recruiters.Recruiter',
+        Recruiter,
         on_delete=models.CASCADE,
         related_name='job_alerts',
         db_index=True,
@@ -43,20 +49,25 @@ class JobAlert(models.Model):
         verbose_name='Từ khóa'
     )
     category = models.ForeignKey(
-        'recruitment_job_categories.JobCategory',
+        JobCategory,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='job_alerts',
         verbose_name='Danh mục'
     )
-    province = models.ForeignKey(
-        'geography_provinces.Province',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+    # Thay thế province Single FK bằng ManyToManyField locations
+    locations = models.ManyToManyField(
+        Province,
         related_name='job_alerts',
-        verbose_name='Tỉnh/Thành phố'
+        blank=True,
+        verbose_name='Địa điểm làm việc'
+    )
+    skills = models.ManyToManyField(
+        Skill,
+        related_name='job_alerts',
+        blank=True,
+        verbose_name='Kỹ năng'
     )
     job_type = models.CharField(
         max_length=20,
@@ -79,13 +90,7 @@ class JobAlert(models.Model):
         blank=True,
         verbose_name='Mức lương tối thiểu'
     )
-    salary_max = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        verbose_name='Mức lương tối đa'
-    )
+    # salary_max thường không cần thiết cho alert (thường tìm lương >= min)
     is_active = models.BooleanField(
         default=True,
         db_index=True,
@@ -96,6 +101,10 @@ class JobAlert(models.Model):
         choices=Frequency.choices,
         default=Frequency.DAILY,
         verbose_name='Tần suất'
+    )
+    email_notification = models.BooleanField(
+        default=True,
+        verbose_name='Nhận email thông báo'
     )
     last_sent_at = models.DateTimeField(
         null=True,
@@ -115,6 +124,51 @@ class JobAlert(models.Model):
         db_table = 'job_alerts'
         verbose_name = 'Thông báo việc làm'
         verbose_name_plural = 'Thông báo việc làm'
+        ordering = ['-created_at']
     
     def __str__(self):
-        return self.alert_name
+        return f"{self.alert_name} ({self.recruiter})"
+
+
+class JobAlertMatch(models.Model):
+    """Bảng lưu lịch sử Job đã match với Alert"""
+    
+    job_alert = models.ForeignKey(
+        JobAlert,
+        on_delete=models.CASCADE,
+        related_name='matches',
+        verbose_name='Job Alert'
+    )
+    job = models.ForeignKey(
+        Job,
+        on_delete=models.CASCADE,
+        related_name='alert_matches',
+        verbose_name='Việc làm'
+    )
+    is_sent = models.BooleanField(
+        default=False,
+        verbose_name='Đã gửi thông báo'
+    )
+    is_viewed = models.BooleanField(
+        default=False,
+        verbose_name='Đã xem'
+    )
+    matched_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        verbose_name='Thời điểm khớp'
+    )
+    score = models.FloatField(
+        default=0.0,
+        verbose_name='Điểm phù hợp'
+    )
+
+    class Meta:
+        db_table = 'job_alert_matches'
+        verbose_name = 'Kết quả khớp job'
+        verbose_name_plural = 'Kết quả khớp job'
+        unique_together = ['job_alert', 'job']
+        ordering = ['-matched_at']
+
+    def __str__(self):
+        return f"{self.job_alert.alert_name} - {self.job.title}"

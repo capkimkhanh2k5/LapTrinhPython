@@ -21,6 +21,11 @@ urlpatterns = [
     # Company Followers routes (must be before generic company routes)
     path('api/companies/', include('apps.social.company_followers.urls')),
     path('api/companies/', include('apps.company.companies.urls')),
+    # Company Media nested routes
+    path('api/companies/', include('apps.company.company_media.urls')),
+    
+    # Jobs routes (Module 4 - CRITICAL)
+    path('api/jobs/', include('apps.recruitment.jobs.urls')),
     
     # Recruiter app routes
     path('api/recruiters/', include('apps.candidate.recruiters.urls')),
@@ -41,10 +46,12 @@ urlpatterns = [
     path('api/languages/', include('apps.candidate.languages.urls')),
     
     # Jobs routes
-    path('api/jobs/', include('apps.recruitment.jobs.urls')),
-    
-    # Applications flat routes (CRUD + status/rating)
+    path('api/', include('apps.recruitment.campaigns.urls')),
     path('api/applications/', include('apps.recruitment.applications.urls')),
+    path('api/', include('apps.recruitment.application_status_history.urls')),
+    
+    # Billing routes
+    path('api/billing/', include('apps.billing.urls')),
     
     # Job Applications nested routes
     path('api/jobs/<int:job_id>/applications/', include('apps.recruitment.applications.urls_nested')),
@@ -52,7 +59,13 @@ urlpatterns = [
     # Job Skills nested routes
     path('api/jobs/<int:job_id>/skills/', include('apps.recruitment.job_skills.urls')),
     
-    # Job Locations nested routes
+    # Email routes
+    path('api/email/', include('apps.email.urls')),
+    
+    # Blog routes
+    path('api/blog/', include('apps.blog.urls')),
+    
+    # System Domaintions nested routes
     path('api/jobs/<int:job_id>/locations/', include('apps.recruitment.job_locations.urls')),
     
     # Saved Jobs routes
@@ -90,7 +103,41 @@ urlpatterns = [
     path('api/communes/', include('apps.geography.communes.urls')),
     path('api/addresses/', include('apps.geography.addresses.urls')),
     
+    # Assessment Module 10-11: AI Matching, Tests, Results
+    path('api/', include('apps.assessment.ai_matching_scores.urls')),
+    path('api/assessment-tests/', include('apps.assessment.assessment_tests.urls')),
+    path('api/test-results/', include('apps.assessment.test_results.urls')),
+    
+    # Reviews, Connections, Recommendations
+    path('api/reviews/', include('apps.social.reviews.urls')),
+    path('api/connections/', include('apps.social.recruiter_connections.urls')),
+    path('api/recommendations/', include('apps.social.recommendations.urls')),
+    
+    # Notifications & Messages
+    path('api/notifications/', include('apps.communication.notifications.urls')),
+    path('api/messages/', include('apps.communication.message_threads.urls')),
+    path('api/messages/', include('apps.communication.messages.urls')),
+    
+    # Job Alerts
+    path('api/', include('apps.communication.job_alerts.urls')),
+    
     # JWT Token endpoints (built-in)
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/', include('apps.recruitment.referrals.urls')),
+    
+    # System & Administration
+    path('api/system-settings/', include('apps.system.system_settings.urls')),
+    path('api/activity-logs/', include('apps.system.activity_logs.urls')),
+    path('api/file-uploads/', include('apps.system.file_uploads.urls')),
+    
+    # Advanced Features
+    path('api/search-history/', include('apps.system.job_search_history.urls')),
+    
+    # Analytics & Reporting
+    path('api/dashboard/', include('apps.analytics.urls')),
+    
+    # Media Types
+    path('api/media-types/', include('apps.company.media_types.urls')),
 ]
+

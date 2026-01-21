@@ -1,0 +1,412 @@
+{
+    "info": {
+        "_postman_id": "module18-email",
+        "name": "Module 18: Email Management",
+        "description": "API Email Management - 14 endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "18.1 Email Templates",
+            "item": [
+                {
+                    "name": "List Email Templates",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/email-templates?page=1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "email-templates"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Template Detail",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('email_template_id', json.id);",
+                                    "if (json.slug) pm.environment.set('email_template_slug', json.slug);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/email-templates/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "email-templates",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{email_template_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Email Template (Admin)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('email_template_id', json.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Welcome Email\",\n  \"slug\": \"welcome-email\",\n  \"subject\": \"Welcome to {{company_name}}\",\n  \"body\": \"<h1>Hello {{user_name}}</h1><p>Welcome aboard!</p>\",\n  \"category_id\": 1,\n  \"is_active\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/email-templates",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "email-templates"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Email Template",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"subject\": \"Updated Subject\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/email-templates/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "email-templates",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{email_template_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Email Template",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/email-templates/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "email-templates",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{email_template_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Preview Email Template",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"context\": {\n    \"user_name\": \"John Doe\",\n    \"company_name\": \"Tech Corp\"\n  }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/email-templates/:id/preview",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "email-templates",
+                                ":id",
+                                "preview"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{email_template_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Template Categories",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/email-templates/categories",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "email-templates",
+                                "categories"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Duplicate Email Template",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/email-templates/:id/duplicate",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "email-templates",
+                                ":id",
+                                "duplicate"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{email_template_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "18.2 Sent Emails",
+            "item": [
+                {
+                    "name": "List Sent Emails",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/sent-emails?page=1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sent-emails"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Sent Email Detail",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('sent_email_id', json.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/sent-emails/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sent-emails",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{sent_email_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Send Email",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"template_id\": {{email_template_id}},\n  \"recipient\": \"test@example.com\",\n  \"context\": {\n    \"user_name\": \"Test User\"\n  }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sent-emails",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sent-emails"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Email Stats",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/sent-emails/stats",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sent-emails",
+                                "stats"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Application Emails",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/applications/:id/emails",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "applications",
+                                ":id",
+                                "emails"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{application_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Resend Email",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/sent-emails/:id/resend",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sent-emails",
+                                ":id",
+                                "resend"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{sent_email_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

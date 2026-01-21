@@ -1,0 +1,150 @@
+from typing import Optional
+from django.db.models import QuerySet, Count, Max, Q
+from apps.communication.message_threads.models import MessageThread
+from apps.communication.messages.models import Message
+from apps.communication.message_participants.models import MessageParticipant
+
+
+def list_threads(user_id: int) -> QuerySet:
+    """
+    Get list of message threads for a user.
+    
+    Args:
+        user_id: ID of the user
+    
+    Returns:
+        QuerySet of threads the user participates in, ordered by updated_at
+    """
+    return MessageThread.objects.filter(
+        participants__user_id=user_id,
+        participants__is_active=True
+    ).prefetch_related(
+        'participants__user',
+        'messages'
+    ).annotate(
+        last_message_at=Max('messages__created_at')
+    ).order_by('-last_message_at', '-updated_at')
+
+
+def get_thread_by_id(thread_id: int, user_id: int) -> Optional[MessageThread]:
+    """
+    Get a thread by ID, checking user access.
+    
+    Args:
+        thread_id: ID of the thread
+        user_id: ID of the user (for access check)
+    
+    Returns:
+        MessageThread object or None if not found or no access
+    """
+    try:
+        thread = MessageThread.objects.prefetch_related(
+            'participants__user',
+        ).get(id=thread_id)
+        
+        # Check user is a participant
+        if not thread.participants.filter(user_id=user_id, is_active=True).exists():
+            return None
+        
+        return thread
+    except MessageThread.DoesNotExist:
+        return None
+
+
+def list_messages(thread_id: int, user_id: int) -> Optional[QuerySet]:
+    """
+    Get messages in a thread.
+    
+    Args:
+        thread_id: ID of the thread
+        user_id: ID of the user (for access check)
+    
+    Returns:
+        QuerySet of messages or None if thread not found or no access
+    """
+    # Check access
+    if not MessageParticipant.objects.filter(
+        thread_id=thread_id,
+        user_id=user_id,
+        is_active=True
+    ).exists():
+        return None
+    
+    return Message.objects.filter(
+        thread_id=thread_id
+    ).select_related('sender').order_by('created_at')
+
+
+def get_message_by_id(message_id: int) -> Optional[Message]:
+    """
+    Get a message by ID.
+    
+    Args:
+        message_id: ID of the message
+    
+    Returns:
+        Message object or None if not found
+    """
+    try:
+        return Message.objects.select_related('sender', 'thread').get(id=message_id)
+    except Message.DoesNotExist:
+        return None
+
+
+def count_unread_messages(user_id: int) -> int:
+    """
+    Count total unread messages across all threads for a user.
+    
+    Args:
+        user_id: ID of the user
+    
+    Returns:
+        Total count of unread messages
+    """
+    unread_count = 0
+    
+    participations = MessageParticipant.objects.filter(
+        user_id=user_id,
+        is_active=True
+    ).select_related('thread')
+    
+    for participation in participations:
+        if participation.last_read_at:
+            count = Message.objects.filter(
+                thread_id=participation.thread_id,
+                created_at__gt=participation.last_read_at
+            ).exclude(sender_id=user_id).count()
+        else:
+            count = Message.objects.filter(
+                thread_id=participation.thread_id
+            ).exclude(sender_id=user_id).count()
+        unread_count += count
+    
+    return unread_count
+
+
+def get_thread_between_users(user_ids: list[int]) -> Optional[MessageThread]:
+    """
+    Find existing thread between a set of users (for 1-1 or group chats).
+    
+    Args:
+        user_ids: List of user IDs
+    
+    Returns:
+        Existing MessageThread if found, None otherwise
+    """
+    # Find threads where all users are participants
+    threads = MessageThread.objects.annotate(
+        participant_count=Count('participants', filter=Q(participants__is_active=True))
+    ).filter(
+        participant_count=len(user_ids)
+    )
+    
+    for thread in threads:
+        thread_user_ids = set(
+            thread.participants.filter(is_active=True).values_list('user_id', flat=True)
+        )
+        if thread_user_ids == set(user_ids):
+            return thread
+    
+    return None

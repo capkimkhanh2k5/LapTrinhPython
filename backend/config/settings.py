@@ -37,6 +37,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # ASGI server 
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,6 +51,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'cloudinary_storage',
     'cloudinary',
+    'channels',
+    'django_eventstream',
     
     # ===== Core Domain =====
     'apps.core.users',
@@ -70,6 +73,11 @@ INSTALLED_APPS = [
     # ===== Recruitment Domain =====
     'apps.recruitment.jobs',
     'apps.recruitment.job_categories',
+    'apps.recruitment.campaigns',
+    'apps.recruitment.referrals',
+    
+    # Billing Module
+    'apps.billing',
     'apps.recruitment.job_skills',
     'apps.recruitment.job_locations',
     'apps.recruitment.applications',
@@ -79,8 +87,8 @@ INSTALLED_APPS = [
     'apps.recruitment.interview_interviewers',
     'apps.recruitment.saved_jobs',
     'apps.recruitment.job_views',
-    'apps.recruitment.recruitment_campaigns',
-    'apps.recruitment.campaign_jobs',
+    # 'apps.recruitment.recruitment_campaigns',
+    # 'apps.recruitment.campaign_jobs', 
     
     # ===== Candidate Domain =====
     'apps.candidate.recruiters',
@@ -124,34 +132,39 @@ INSTALLED_APPS = [
     'apps.communication.job_alert_skills',
     
     # ===== Billing Domain =====
-    'apps.billing.subscription_plans',
-    'apps.billing.company_subscriptions',
-    'apps.billing.payment_methods',
-    'apps.billing.payment_transactions',
+    # 'apps.billing.subscription_plans',
+    # 'apps.billing.company_subscriptions', 
+    # 'apps.billing.payment_methods',
+    # 'apps.billing.payment_transactions',
     
     # ===== Email Domain =====
-    'apps.email.email_templates',
-    'apps.email.email_template_categories',
-    'apps.email.email_campaigns',
-    'apps.email.email_logs',
-    'apps.email.sent_emails',
+    'apps.email',
+    # 'apps.email.email_templates',
+    # 'apps.email.email_template_categories', 
+    # 'apps.email.email_campaigns',
+    # 'apps.email.email_logs',
+    # 'apps.email.sent_emails',
     
     # ===== Blog Domain =====
-    'apps.blog.blog_posts',
-    'apps.blog.blog_categories',
-    'apps.blog.blog_tags',
-    'apps.blog.blog_post_tags',
-    'apps.blog.blog_comments',
+    'apps.blog',
+    # 'apps.blog.blog_posts',
+    # 'apps.blog.blog_categories',
+    # 'apps.blog.blog_tags',
+    # 'apps.blog.blog_post_tags',
+    # 'apps.blog.blog_comments',
     
     # ===== System Domain =====
     'apps.system.system_settings',
     'apps.system.activity_logs',
     'apps.system.activity_log_types',
     'apps.system.file_uploads',
-    'apps.system.analytics_reports',
-    'apps.system.analytics_daily_statistics',
-    'apps.system.report_types',
-    'apps.system.reports',
+    
+    # ===== Analytics Domain =====
+    'apps.analytics',
+    # 'apps.system.analytics_reports',
+    # 'apps.system.analytics_daily_statistics',
+    # 'apps.system.report_types',
+    # 'apps.system.reports',
     'apps.system.audit_logs',
     'apps.system.search_history',
     'apps.system.faqs',
@@ -187,6 +200,20 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+# Channel Layers với Redis cho real-time
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv("REDIS_HOST", "localhost"), 6379)],
+        },
+    },
+}
+
+# EventStream Settings cho SSE
+EVENTSTREAM_STORAGE_CLASS = 'django_eventstream.storage.DjangoModelStorage'
 
 
 # Database

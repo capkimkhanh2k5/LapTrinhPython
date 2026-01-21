@@ -1,0 +1,489 @@
+{
+    "info": {
+        "_postman_id": "module11-assessment",
+        "name": "Module 11: Assessment & Testing",
+        "description": "API Assessment & Testing - 16 endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "11.1 Assessment Tests",
+            "item": [
+                {
+                    "name": "List Assessment Tests",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/assessment-tests?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "assessment-tests"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Assessment Test Detail",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('assessment_test_id', json.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/assessment-tests/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "assessment-tests",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{assessment_test_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Assessment Test (Admin)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('assessment_test_id', json.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Python Programming Test\",\n  \"description\": \"Basic Python skills assessment\",\n  \"type\": \"technical\",\n  \"duration_minutes\": 60,\n  \"passing_score\": 70,\n  \"is_active\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/assessment-tests",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "assessment-tests"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Assessment Test",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Python Programming Test Updated\",\n  \"passing_score\": 75\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/assessment-tests/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "assessment-tests",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{assessment_test_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Assessment Test",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/assessment-tests/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "assessment-tests",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{assessment_test_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Test Categories",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/assessment-tests/categories",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "assessment-tests",
+                                "categories"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Tests by Type",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/assessment-tests/by-type/:type",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "assessment-tests",
+                                "by-type",
+                                ":type"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "type",
+                                    "value": "technical"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Start Test",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                                    "var json = pm.response.json();",
+                                    "if (json.attempt_id) pm.environment.set('test_attempt_id', json.attempt_id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/assessment-tests/:id/start",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "assessment-tests",
+                                ":id",
+                                "start"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{assessment_test_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Submit Test",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"answers\": [\n    {\"question_id\": 1, \"answer\": \"A\"},\n    {\"question_id\": 2, \"answer\": \"B\"}\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/assessment-tests/:id/submit",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "assessment-tests",
+                                ":id",
+                                "submit"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{assessment_test_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Test Results",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/assessment-tests/:id/results",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "assessment-tests",
+                                ":id",
+                                "results"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{assessment_test_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "11.2 Test Results",
+            "item": [
+                {
+                    "name": "Get Recruiter Test Results",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/recruiters/:id/test-results",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recruiters",
+                                ":id",
+                                "test-results"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{recruiter_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Test Result Detail",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "var json = pm.response.json();",
+                                    "if (json.id) pm.environment.set('test_result_id', json.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/test-results/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "test-results",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{test_result_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Certificate",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/test-results/:id/certificate",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "test-results",
+                                ":id",
+                                "certificate"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{test_result_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Retake Test",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/test-results/:id/retake",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "test-results",
+                                ":id",
+                                "retake"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{test_result_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Application Test Results",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/applications/:id/test-results",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "applications",
+                                ":id",
+                                "test-results"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{application_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Job Required Tests",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/jobs/:id/required-tests",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "jobs",
+                                ":id",
+                                "required-tests"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "{{job_id}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

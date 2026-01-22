@@ -57,14 +57,14 @@ def verify_social_token(provider: str, token: str) -> dict:
         # URL xác thực token của Google
         response = requests.get(f'https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}')
         if response.status_code != 200:
-            raise AuthenticationError("Token Google không hợp lệ hoặc đã hết hạn!")
+            raise AuthenticationError("Token Google is invalid or expired!")
         return response.json() # Chứa: email, name, picture, sub...
         
     elif provider == 'facebook':
         # URL xác thực token của Facebook
         response = requests.get(f'https://graph.facebook.com/me?fields=id,name,email,picture&access_token={token}')
         if response.status_code != 200:
-            raise AuthenticationError("Token Facebook không hợp lệ hoặc đã hết hạn!")
+            raise AuthenticationError("Token Facebook is invalid or expired!")
         return response.json()
         
     elif provider == 'linkedin':
@@ -72,10 +72,10 @@ def verify_social_token(provider: str, token: str) -> dict:
         headers = {'Authorization': f'Bearer {token}'}
         response = requests.get('https://api.linkedin.com/v2/userinfo', headers=headers)
         if response.status_code != 200:
-            raise AuthenticationError("Token LinkedIn không hợp lệ hoặc đã hết hạn!")
+            raise AuthenticationError("Token LinkedIn is invalid or expired!")
         return response.json()
         
-    raise AuthenticationError(f"Provider {provider} chưa được hỗ trợ!")
+    raise AuthenticationError(f"Provider {provider} is not supported!")
 
 
 # Service Functions
@@ -94,15 +94,15 @@ def login_user(data: LoginInput) -> dict:
     user = get_user_by_email(email=data.email)
     
     if not user:
-        raise AuthenticationError("Email không tồn tại!")
+        raise AuthenticationError("Email not found!")
     
     if not user.check_password(data.password):
-        raise AuthenticationError("Mật khẩu không đúng!")
+        raise AuthenticationError("Password is incorrect!")
 
     if user.status != 'active':
-        raise AuthenticationError("Tài khoản đã bị khóa!")
+        raise AuthenticationError("Account is inactive!")
 
-    # Cập nhật last_login
+    # Update last_login
     user.last_login = timezone.now()
     user.save(update_fields=["last_login"])
 
@@ -124,7 +124,7 @@ def logout_user(data: LogoutInput) -> bool:
         token.blacklist()
         return True
     except Exception as e:
-        raise AuthenticationError(f"Không thể logout: {str(e)}")
+        raise AuthenticationError(f"Can't logout: {str(e)}")
 
 class RegisterInput(BaseModel):
     email: EmailStr
@@ -146,9 +146,9 @@ def register_user(data: RegisterInput) -> dict:
     #Check email tồn tại
     existing_user = get_user_by_email(email=data.email)
     if existing_user:
-        raise AuthenticationError("Email đã được sử dụng!")
+        raise AuthenticationError("Email is already in use!")
     
-    #Tạo user mới
+    #Create new user
     user = CustomUser.objects.create_user(
         email=data.email,
         password=data.password,
@@ -184,7 +184,7 @@ def forgot_password(data: ForgotPasswordInput) -> bool:
     """
     user = get_user_by_email(email=data.email)
     if not user:
-        raise AuthenticationError("Email không tồn tại!")
+        raise AuthenticationError("Email not found!")
     
     reset_token = secrets.token_urlsafe(32)
     reset_expires = timezone.now() + timedelta(minutes = 5)
@@ -211,10 +211,10 @@ def reset_password(data: ResetPasswordInput) -> bool:
 
     user = get_user_by_reset_token(reset_token=data.reset_token)
     if not user:
-        raise AuthenticationError("Token không hợp lệ!")
+        raise AuthenticationError("Token is invalid!")
     
     if user.password_reset_expires < timezone.now():
-        raise AuthenticationError("Token đã hết hạn!")
+        raise AuthenticationError("Token has expired!")
     
     user.set_password(data.new_password)
     user.password_reset_token = None
@@ -242,7 +242,7 @@ def verify_email(data: VerifyEmailInput) -> bool:
     """
     user = get_user_by_verification_token(token=data.token)
     if not user:
-        raise AuthenticationError("Token không hợp lệ!")
+        raise AuthenticationError("Token is invalid!")
     
     user.email_verified = True
     user.email_verification_token = None
@@ -263,10 +263,10 @@ def resend_verification(data: ResendVerificationInput) -> bool:
 
     user = get_user_by_email(email=data.email)
     if not user:
-        raise AuthenticationError("Email không tồn tại!")
+        raise AuthenticationError("Email not found!")
     
     if user.email_verified:
-        raise AuthenticationError("Email đã được xác minh!")
+        raise AuthenticationError("Email has been verified!")
     
     user.email_verification_token = secrets.token_urlsafe(32)
     user.save(update_fields=["email_verification_token"])
@@ -297,7 +297,7 @@ def change_password(data: ChangePasswordInput) -> bool:
     user = CustomUser.objects.get(id=data.user_id)
 
     if not user.check_password(data.old_password):
-        raise AuthenticationError("Mật khẩu cũ không đúng!")
+        raise AuthenticationError("Old password is incorrect!")
 
     user.set_password(data.new_password)
     user.save(update_fields=["password"])
@@ -359,10 +359,10 @@ def verify_2fa(data: Verify2FAInput) -> bool:
     user = CustomUser.objects.get(id=data.user_id)
 
     if not user.two_factor_enabled:
-        raise AuthenticationError("Tài khoản chưa kích hoạt 2FA!")
+        raise AuthenticationError("Account is not enabled 2FA!")
 
     if not user.check_2fa_code(data.code):
-        raise AuthenticationError("Mã 2FA không đúng!")
+        raise AuthenticationError("2FA code is incorrect!")
     
     return True
         

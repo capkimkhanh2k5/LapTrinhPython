@@ -45,15 +45,16 @@ class EmailService:
             return False
 
         try:
-
-            #TODO: Cần gửi email thực sự
+            # Send email via Django's send_mail
+            send_mail(
+                subject=subject,
+                message=content,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[recipient],
+                fail_silently=False
+            )
             
-            # Simulate sending if no email backend strictly configured or just use send_mail
-            # send_mail(subject, content, settings.DEFAULT_FROM_EMAIL, [recipient], fail_silently=False)
-            # Commented out to avoid actual sending errors in dev without SMTP, 
-            # OR wrap in try/catch for connection errors.
-            # For now, just Log Success to DB.
-            
+            # Log successful email to database
             SentEmail.objects.create(
                 recipient=recipient,
                 subject=subject,

@@ -330,3 +330,7 @@ VNP_TMN_CODE = os.getenv('VNP_TMN_CODE', '')
 VNP_HASH_SECRET = os.getenv('VNP_HASH_SECRET', '')
 VNP_URL = os.getenv('VNP_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html')
 VNP_RETURN_URL = os.getenv('VNP_RETURN_URL', 'http://localhost:3000/billing/payment-return')
+
+# ===== MongoDB Configuration (Chat) =====
+MONGO_URI = os.getenv('MONGO_URI', 'mongodb://mongo:27017/')
+MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'jobportal_chat')

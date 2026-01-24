@@ -36,6 +36,17 @@ class MessageThread(models.Model):
         auto_now=True,
         verbose_name='Ngày cập nhật'
     )
+    last_message_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name='Thời gian tin nhắn cuối'
+    )
+    last_message_content = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name='Nội dung tin nhắn cuối'
+    )
     
     class Meta:
         db_table = 'message_threads'

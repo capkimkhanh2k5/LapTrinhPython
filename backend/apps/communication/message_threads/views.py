@@ -16,6 +16,7 @@ from .serializers import (
 from apps.communication.messages.serializers import (
     MessageSerializer,
     MessageCreateSerializer,
+    MongoMessageSerializer,
 )
 from apps.communication.messages.selectors.messages import (
     list_threads,
@@ -32,7 +33,6 @@ from apps.communication.messages.services.messages import (
     ThreadCreateInput,
     MessageCreateInput,
 )
-
 
 class MessageThreadViewSet(
     mixins.ListModelMixin,
@@ -160,10 +160,10 @@ class MessageThreadViewSet(
         
         page = self.paginate_queryset(messages)
         if page is not None:
-            serializer = MessageSerializer(page, many=True)
+            serializer = MongoMessageSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
         
-        serializer = MessageSerializer(messages, many=True)
+        serializer = MongoMessageSerializer(messages, many=True)
         return Response(serializer.data)
     
     def _send_message(self, request, thread_id):

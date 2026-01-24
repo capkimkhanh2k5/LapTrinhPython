@@ -4,13 +4,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .models import Message
 from .serializers import (
     MessageSerializer,
     AttachmentUploadSerializer,
 )
 from .selectors.messages import (
-    get_message_by_id,
     count_unread_messages,
 )
 from .services.messages import (

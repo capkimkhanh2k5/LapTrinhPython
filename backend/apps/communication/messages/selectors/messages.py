@@ -1,8 +1,7 @@
-from typing import Optional
-from django.db.models import QuerySet, Count, Max, Q
+from django.db.models import QuerySet, Count, Q
 from apps.communication.message_threads.models import MessageThread
-from apps.communication.messages.models import Message
 from apps.communication.message_participants.models import MessageParticipant
+from apps.communication.messages.services.mongo_service import MongoChatService
 
 
 def list_threads(user_id: int) -> QuerySet:
@@ -19,10 +18,7 @@ def list_threads(user_id: int) -> QuerySet:
         participants__user_id=user_id,
         participants__is_active=True
     ).prefetch_related(
-        'participants__user',
-        'messages'
-    ).annotate(
-        last_message_at=Max('messages__created_at')
+        'participants__user'
     ).order_by('-last_message_at', '-updated_at')
 
 
@@ -70,57 +66,20 @@ def list_messages(thread_id: int, user_id: int) -> Optional[QuerySet]:
     ).exists():
         return None
     
-    return Message.objects.filter(
-        thread_id=thread_id
-    ).select_related('sender').order_by('created_at')
+    # MongoDB Logic
+    return MongoChatService.get_messages(thread_id=thread_id)
 
 
-def get_message_by_id(message_id: int) -> Optional[Message]:
-    """
-    Get a message by ID.
-    
-    Args:
-        message_id: ID of the message
-    
-    Returns:
-        Message object or None if not found
-    """
-    try:
-        return Message.objects.select_related('sender', 'thread').get(id=message_id)
-    except Message.DoesNotExist:
-        return None
+# get_message_by_id removed (SQL)
 
 
 def count_unread_messages(user_id: int) -> int:
     """
     Count total unread messages across all threads for a user.
-    
-    Args:
-        user_id: ID of the user
-    
-    Returns:
-        Total count of unread messages
+    TODO: Implement MongoDB aggregation for unread count.
     """
-    unread_count = 0
-    
-    participations = MessageParticipant.objects.filter(
-        user_id=user_id,
-        is_active=True
-    ).select_related('thread')
-    
-    for participation in participations:
-        if participation.last_read_at:
-            count = Message.objects.filter(
-                thread_id=participation.thread_id,
-                created_at__gt=participation.last_read_at
-            ).exclude(sender_id=user_id).count()
-        else:
-            count = Message.objects.filter(
-                thread_id=participation.thread_id
-            ).exclude(sender_id=user_id).count()
-        unread_count += count
-    
-    return unread_count
+    # Placeholder for Migration phase
+    return 0
 
 
 def get_thread_between_users(user_ids: list[int]) -> Optional[MessageThread]:

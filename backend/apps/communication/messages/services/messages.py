@@ -1,14 +1,20 @@
+import os
+import uuid
+
 from typing import Optional
+
 from django.utils import timezone
 from django.db import transaction
 from django.core.files.uploadedfile import UploadedFile
+from django.conf import settings
+
 from pydantic import BaseModel
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 from apps.communication.message_threads.models import MessageThread
-from apps.communication.messages.models import Message
 from apps.communication.message_participants.models import MessageParticipant
+from apps.communication.messages.services.mongo_service import MongoChatService
 from apps.core.users.models import CustomUser
 
 
@@ -142,16 +148,23 @@ def send_message(
     ).exists():
         raise ValueError("You are not a participant in this thread")
     
-    # Create message
-    message = Message.objects.create(
+    # Create message (MongoDB)
+    message_data = MongoChatService.save_message(
         thread_id=thread_id,
-        sender=sender,
+        sender_id=sender.id,
+        sender_name=sender.full_name,
+        sender_avatar=sender.avatar_url,
         content=data.content,
-        attachment_url=data.attachment_url or ''
+        attachments=data.attachment_url
     )
+    message = message_data # It's a dict
     
-    # Update thread updated_at
-    MessageThread.objects.filter(id=thread_id).update(updated_at=timezone.now())
+    # Update thread updated_at AND last_message metadata
+    MessageThread.objects.filter(id=thread_id).update(
+        updated_at=timezone.now(),
+        last_message_at=timezone.now(),
+        last_message_content=data.content[:500] if data.content else "Attachment"
+    )
     
     # Send real-time notification via WebSocket
     try:
@@ -189,16 +202,8 @@ def delete_message(message_id: int, user_id: int) -> bool:
     Raises:
         ValueError: If message not found or user is not the sender
     """
-    try:
-        message = Message.objects.get(id=message_id)
-    except Message.DoesNotExist:
-        raise ValueError("Message not found")
-    
-    if message.sender_id != user_id:
-        raise ValueError("You can only delete your own messages")
-    
-    message.delete()
-    return True
+    # MongoDB Delete
+    return MongoChatService.delete_message(message_id, user_id)
 
 
 def mark_thread_as_read(thread_id: int, user_id: int) -> bool:
@@ -286,11 +291,13 @@ def add_participant(
     # Send system message
     thread = MessageThread.objects.get(id=thread_id)
     adder = CustomUser.objects.get(id=adder_id)
-    Message.objects.create(
-        thread=thread,
-        sender=adder,
-        content=f"{adder.full_name} added {user.full_name} to the conversation",
-        is_system_message=True
+    # Send system message (MongoDB)
+    MongoChatService.save_message(
+        thread_id=thread_id,
+        sender_id=adder_id,
+        sender_name=adder.full_name,
+        sender_avatar=adder.avatar_url,
+        content=f"{adder.full_name} added {user.full_name} to the conversation"
     )
     
     return participant
@@ -346,11 +353,13 @@ def remove_participant(
     else:
         content = f"{remover.full_name} removed {removed_user.full_name} from the conversation"
     
-    Message.objects.create(
-        thread=thread,
-        sender=remover,
-        content=content,
-        is_system_message=True
+    # Send system message (MongoDB)
+    MongoChatService.save_message(
+        thread_id=thread_id,
+        sender_id=remover_id,
+        sender_name=remover.full_name,
+        sender_avatar=remover.avatar_url,
+        content=content
     )
     
     return True
@@ -370,9 +379,6 @@ def upload_attachment(file: UploadedFile, user: CustomUser) -> str:
     Note: This is a placeholder - actual implementation depends on
     your file storage backend (local, S3, Cloudinary, etc.)
     """
-    from django.conf import settings
-    import os
-    import uuid
     
     # Generate unique filename
     ext = file.name.split('.')[-1].lower()

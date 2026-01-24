@@ -4,14 +4,9 @@ from channels.db import database_sync_to_async
 from django.utils import timezone
 
 """Lưu tin nhắn vào database."""
-from apps.communication.messages.models import Message
 from apps.communication.message_threads.models import MessageThread
-
 from apps.communication.message_participants.models import MessageParticipant
-
-from apps.communication.message_participants.models import MessageParticipant
-
-#TODO: Cần kiểm tra lại, có thể tối ưu lưu tin nhắn ở chõ khác
+from apps.communication.messages.services.mongo_service import MongoChatService
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -204,22 +199,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             thread = MessageThread.objects.get(id=self.thread_id)
             
-            message = Message.objects.create(
-                thread=thread,
-                sender=self.user,
+            message_doc = MongoChatService.save_message(
+                thread_id=self.thread_id,
+                sender_id=self.user.id,
+                sender_name=self.user.full_name,
+                sender_avatar=getattr(self.user, 'avatar_url', None),
                 content=content
             )
             
             # Update thread updated_at
             thread.save()
             
-            return {
-                'id': message.id,
-                'content': message.content,
-                'sender_id': message.sender.id,
-                'sender_name': message.sender.full_name,
-                'created_at': message.created_at.isoformat(),
-            }
+            return message_doc
         except MessageThread.DoesNotExist:
             return None
     

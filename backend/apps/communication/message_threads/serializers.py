@@ -2,7 +2,6 @@
 
 from rest_framework import serializers
 from .models import MessageThread
-from apps.communication.messages.models import Message
 from apps.communication.message_participants.models import MessageParticipant
 from apps.core.users.models import CustomUser
 
@@ -25,14 +24,14 @@ class MessageParticipantSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'joined_at', 'last_read_at', 'is_active']
 
 
-class LastMessageSerializer(serializers.ModelSerializer):
-    """Serializer cho tin nhắn cuối cùng của thread."""
-    
-    sender_name = serializers.CharField(source='sender.full_name', read_only=True)
-    
-    class Meta:
-        model = Message
-        fields = ['id', 'sender_id', 'sender_name', 'content', 'created_at']
+class LastMessageSerializer(serializers.Serializer):
+    """Serializer cho tin nhắn cuối cùng của thread (Lite)."""
+    # id = serializers.CharField() # Not needed for list view usually, or use Mongo ID
+    content = serializers.CharField(source='last_message_content')
+    created_at = serializers.DateTimeField(source='last_message_at')
+    # Sender info might be missing if we only store content in Thread. 
+    # Valid trade-off for performance. Or store sender_name in Thread too? 
+    # For now, just return content/time.
 
 
 class MessageThreadSerializer(serializers.ModelSerializer):
@@ -57,9 +56,11 @@ class MessageThreadSerializer(serializers.ModelSerializer):
         ]
     
     def get_last_message(self, obj):
-        last_msg = obj.messages.order_by('-created_at').first()
-        if last_msg:
-            return LastMessageSerializer(last_msg).data
+        if obj.last_message_at:
+             return {
+                 'content': obj.last_message_content,
+                 'created_at': obj.last_message_at
+             }
         return None
     
     def get_participant_count(self, obj):
@@ -70,18 +71,8 @@ class MessageThreadSerializer(serializers.ModelSerializer):
         if not request:
             return 0
         
-        try:
-            participant = obj.participants.get(
-                user_id=request.user.id,
-                is_active=True
-            )
-            if participant.last_read_at:
-                return obj.messages.filter(
-                    created_at__gt=participant.last_read_at
-                ).exclude(sender_id=request.user.id).count()
-            return obj.messages.exclude(sender_id=request.user.id).count()
-        except MessageParticipant.DoesNotExist:
-            return 0
+        # Unread count temporarily disabled during Mongo migration
+        return 0
 
 
 class MessageThreadDetailSerializer(serializers.ModelSerializer):
@@ -104,9 +95,11 @@ class MessageThreadDetailSerializer(serializers.ModelSerializer):
         ]
     
     def get_last_message(self, obj):
-        last_msg = obj.messages.order_by('-created_at').first()
-        if last_msg:
-            return LastMessageSerializer(last_msg).data
+        if obj.last_message_at:
+             return {
+                 'content': obj.last_message_content,
+                 'created_at': obj.last_message_at
+             }
         return None
 
 

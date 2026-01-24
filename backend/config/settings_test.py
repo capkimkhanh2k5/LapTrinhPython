@@ -182,3 +182,9 @@ SIMPLE_JWT = {
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
+
+# ===== VN Pay Configuration (TestDummy) =====
+VNP_TMN_CODE = "EMBIL7EU"
+VNP_HASH_SECRET = "FP2480JF752TUW5PZWV8MSHCE4FAWB2V"
+VNP_URL = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+VNP_RETURN_URL = "http://localhost:3000/billing/payment-return"

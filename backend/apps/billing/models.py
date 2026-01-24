@@ -79,6 +79,13 @@ class Transaction(TimeStampedModel):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     reference_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
     description = models.TextField(blank=True)
+    
+    # VN Pay Fields
+    vnp_TransactionNo = models.CharField(max_length=100, blank=True, null=True, help_text="Transaction ID at VNPay System")
+    vnp_BankCode = models.CharField(max_length=50, blank=True, null=True)
+    vnp_CardType = models.CharField(max_length=50, blank=True, null=True)
+    vnp_OrderInfo = models.TextField(blank=True, null=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
 
     def __str__(self):
         return f"TX-{self.id} ({self.status})"

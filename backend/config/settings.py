@@ -15,7 +15,10 @@ import os
 from dotenv import load_dotenv
 
 # Load .env file
-load_dotenv()
+try:
+    load_dotenv()
+except Exception as e:
+    print(f"Warning: Could not load .env file: {e}")
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -321,3 +324,9 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+
+# ===== VN Pay Configuration =====
+VNP_TMN_CODE = os.getenv('VNP_TMN_CODE', '')
+VNP_HASH_SECRET = os.getenv('VNP_HASH_SECRET', '')
+VNP_URL = os.getenv('VNP_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html')
+VNP_RETURN_URL = os.getenv('VNP_RETURN_URL', 'http://localhost:3000/billing/payment-return')

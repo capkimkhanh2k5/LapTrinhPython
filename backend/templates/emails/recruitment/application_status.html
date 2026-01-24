@@ -1,0 +1,83 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Cập nhật trạng thái ứng tuyển{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Status Badge Styles */
+    .status-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 9999px;
+        font-weight: 600;
+        font-size: 14px;
+        background-color: #E5E7EB;
+        color: #374151;
+    }
+
+    /* Dynamic Status Colors */
+    .status-shortlisted {
+        background-color: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    /* Blue */
+    .status-interview {
+        background-color: #FEF3C7;
+        color: #92400E;
+    }
+
+    /* Amber */
+    .status-rejected {
+        background-color: #FEE2E2;
+        color: #991B1B;
+    }
+
+    /* Red */
+    .status-accepted {
+        background-color: #DCFCE7;
+        color: #166534;
+    }
+
+    /* Green */
+    .status-offered {
+        background-color: #F3E8FF;
+        color: #6B21A8;
+    }
+
+    /* Purple */
+    .status-reviewing {
+        background-color: #F3F4F6;
+        color: #4B5563;
+    }
+
+    /* Gray */
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Cập nhật trạng thái hồ sơ 📄</h2>
+
+<p>Xin chào <strong>{{ candidate_name }}</strong>,</p>
+
+<p>Đơn ứng tuyển của bạn cho vị trí <strong>{{ job_title }}</strong> tại <strong>{{ company_name }}</strong> vừa được
+    cập nhật.</p>
+
+<div
+    style="background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <p style="font-size: 12px; color: #6B7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+        TRẠNG THÁI MỚI</p>
+    <span class="status-badge status-{{ status_class }}">{{ status_display }}</span>
+</div>
+
+{% if notes %}
+<p><strong>Lời nhắn:</strong></p>
+<p
+    style="background-color: #F9FAFB; padding: 16px; border-radius: 8px; border-left: 3px solid #D1D5DB; margin-top: 8px;">
+    <em>{{ notes }}</em></p>
+{% endif %}
+
+<p>Cảm ơn bạn đã quan tâm đến cơ hội nghề nghiệp này.</p>
+
+<p>Trân trọng,<br>{{ recruiter_name }}</p>
+{% endblock %}

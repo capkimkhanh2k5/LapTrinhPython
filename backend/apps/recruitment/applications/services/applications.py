@@ -6,7 +6,8 @@ from django.utils import timezone
 from apps.candidate.recruiters.models import Recruiter
 from apps.recruitment.jobs.models import Job
 from apps.recruitment.applications.models import Application
-from apps.recruitment.application_status_history.services.application_status_history import log_status_history    
+from apps.recruitment.application_status_history.services.application_status_history import log_status_history
+from apps.email.services import EmailService
 
 class ApplicationCreateInput(BaseModel):
     """
@@ -120,6 +121,25 @@ def change_application_status(
         application.notes = notes
     
     application.save()
+    
+    # Send Status Update Email
+    status_display = status.capitalize()
+    
+    EmailService.send_email(
+        recipient=application.recruiter_cv.email if hasattr(application, 'recruiter_cv') and application.recruiter_cv else (application.recruiter.user.email if hasattr(application.recruiter, 'user') else None),
+        subject=f"[JobPortal] Cập nhật trạng thái ứng tuyển: {application.job.title}",
+        template_path="emails/recruitment/application_status.html",
+        context={
+            "candidate_name": application.recruiter.user.full_name,
+            "job_title": application.job.title,
+            "company_name": application.job.company.company_name,
+            "status_class": status,
+            "status_display": status_display,
+            "notes": notes,
+            "recruiter_name": application.job.company.user.full_name
+        }
+    )
+
     return application
 
 
@@ -169,6 +189,23 @@ def send_offer(application: Application, offer_details: str, user, salary: str =
     
     application.notes = offer_notes
     application.save()
+    
+    # Send Offer Email
+    EmailService.send_email(
+        recipient=application.recruiter.user.email,
+        subject=f"[JobPortal] Thư mời nhận việc: {application.job.title}",
+        template_path="emails/recruitment/offer_letter.html",
+        context={
+            "candidate_name": application.recruiter.user.full_name,
+            "job_title": application.job.title,
+            "company_name": application.job.company.company_name,
+            "header_image_url": application.job.company.banner or "",
+            "salary": salary,
+            "start_date": start_date,
+            "offer_details": offer_details,
+            "recruiter_name": user.full_name
+        }
+    )
     
     return application
 

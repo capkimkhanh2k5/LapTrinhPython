@@ -6,6 +6,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from django.db.models import Avg, Count
 from django.utils import timezone
+from django.conf import settings
+from apps.email.services import EmailService
 
 from .models import Company
 from .serializers import (
@@ -276,8 +278,21 @@ class CompanyViewSet(viewsets.GenericViewSet):
         company.verification_status = 'pending'
         company.save()
 
-        # TODO: Gửi notification cho admin bằng gmail (Hoàn thiện sau)
-        # send_notification_to_admin(company)
+        # Send Admin Notification
+        admin_email = getattr(settings, 'ADMIN_EMAIL', settings.DEFAULT_FROM_EMAIL)  # Fallback
+        
+        EmailService.send_email(
+            recipient=admin_email,
+            subject=f"[JobPortal] Yêu cầu xác thực mới: {company.company_name}",
+            template_path="emails/company/verification_request.html",
+            context={
+                "company_name": company.company_name,
+                "requester_name": request.user.full_name,
+                "requester_email": request.user.email,
+                "created_at": company.created_at.strftime("%d/%m/%Y"),
+                "admin_dashboard_link": f"http://localhost:3000/admin/companies/{company.id}"
+            }
+        )
         
         return Response({"detail": "Verification request sent successfully"}, status=status.HTTP_200_OK)
 

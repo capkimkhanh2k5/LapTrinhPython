@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from apps.recruitment.interviews.models import Interview
 from apps.recruitment.applications.models import Application
+from apps.email.services import EmailService
 
 
 class InterviewCreateInput(BaseModel):
@@ -198,7 +199,6 @@ def add_feedback(interview: Interview, feedback: str) -> Interview:
     return interview
 
 
-#TODO: Gửi gmail nhắc nhở khi phỏng vấn sắp tới (Hoàn thiện sau)
 def send_reminder(interview: Interview, message: str = None) -> dict:
     """
         Gửi nhắc nhở (mock - sẽ tích hợp email sau).
@@ -209,12 +209,22 @@ def send_reminder(interview: Interview, message: str = None) -> dict:
     applicant = interview.application.recruiter.user
     default_message = f"Nhắc nhở: Bạn có lịch phỏng vấn vào {interview.scheduled_at.strftime('%d/%m/%Y %H:%M')}"
     
-    # TODO: Integrate with email service
-    # send_email(
-    #     to=applicant.email,
-    #     subject="Nhắc nhở lịch phỏng vấn",
-    #     body=message or default_message
-    # )
+    # Send Reminder Email
+    EmailService.send_email(
+        recipient=applicant.email,
+        subject="[JobPortal] Nhắc nhở lịch phỏng vấn sắp tới",
+        template_path="emails/recruitment/interview_reminder.html",
+        context={
+            "candidate_name": applicant.full_name,
+            "job_title": interview.application.job.title,
+            "company_name": interview.application.job.company.company_name,
+            "interview_time": interview.scheduled_at.strftime("%H:%M ngày %d/%m/%Y"),
+            "address": interview.address.full_address if interview.address else "Online",
+            "meeting_link": interview.meeting_link,
+            "notes": message or interview.notes,
+            "recruiter_name": interview.created_by.full_name
+        }
+    )
     
     return {
         "status": "sent",

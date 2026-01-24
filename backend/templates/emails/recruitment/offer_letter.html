@@ -1,0 +1,46 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Thư mời nhận việc{% endblock %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h1 style="color: #4F46E5; font-size: 28px; margin-bottom: 8px;">Chúc mừng bạn! 🎉</h1>
+    <p style="font-size: 18px; color: #4B5563;">Bạn đã nhận được Offer!</p>
+</div>
+
+<p>Xin chào <strong>{{ candidate_name }}</strong>,</p>
+
+<p>Chúng tôi rất vui mừng thông báo rằng bạn đã vượt qua các vòng phỏng vấn. <strong>{{ company_name }}</strong> trân
+    trọng gửi đến bạn lời mời làm việc cho vị trí <strong>{{ job_title }}</strong>.</p>
+
+<div class="highlight-box" style="background-color: #F0FDFA; border-color: #99F6E4;">
+    <h3 style="color: #0D9488; margin-bottom: 20px; border-bottom: 1px dashed #99F6E4; padding-bottom: 10px;">Chi tiết
+        Offer</h3>
+
+    <div style="margin-bottom: 12px;">
+        <span style="color: #5F6B7C; font-size: 14px;">Mức lương:</span><br>
+        <strong style="color: #111827; font-size: 16px;">{{ salary }}</strong>
+    </div>
+
+    <div style="margin-bottom: 12px;">
+        <span style="color: #5F6B7C; font-size: 14px;">Ngày bắt đầu:</span><br>
+        <strong style="color: #111827; font-size: 16px;">{{ start_date }}</strong>
+    </div>
+
+    {% if offer_details %}
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed #99F6E4;">
+        <span style="color: #5F6B7C; font-size: 14px;">Nội dung chi tiết:</span><br>
+        <div style="margin-top: 8px; white-space: pre-wrap; color: #374151;">{{ offer_details }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<p>Chúng tôi tin rằng tài năng của bạn sẽ là một phần quan trọng trong sự phát triển của công ty. Vui lòng phản hồi
+    email này để xác nhận.</p>
+
+<div style="text-align: center;">
+    <a href="#" class="btn" style="background-color: #0D9488;">Xác nhận nhận việc</a>
+</div>
+
+<p>Trân trọng,<br><strong>{{ recruiter_name }}</strong></p>
+{% endblock %}

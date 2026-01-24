@@ -10,6 +10,10 @@ from django.utils import timezone
 from ..selectors.users import get_user_by_email, get_user_by_reset_token, get_user_by_verification_token
 from ..models import CustomUser
 
+import string
+from apps.email.services import EmailService
+
+
 
 # Input Models
 
@@ -159,8 +163,18 @@ def register_user(data: RegisterInput) -> dict:
     user.email_verification_token = secrets.token_urlsafe(32)
     user.save(update_fields=["email_verification_token"])
 
-    # TODO: Gửi email chứa link verify (Hoàn thiện sau)
-    print(f"Verify email link: http://localhost:8000/verify-email/{user.email_verification_token}")
+    # Send Verification Email
+    verification_link = f"http://localhost:3000/auth/verify-email?token={user.email_verification_token}"
+    
+    EmailService.send_email(
+        recipient=user.email,
+        subject="[JobPortal] Xác thực tài khoản của bạn",
+        template_path="emails/auth/verify_email.html",
+        context={
+            "user_name": user.full_name,
+            "verification_link": verification_link
+        }
+    )
     
     #Return kết quả
     return generate_tokens(user)
@@ -174,11 +188,9 @@ class ResetPasswordInput(BaseModel):
 
 def forgot_password(data: ForgotPasswordInput) -> bool:
     """
-    Quên mật khẩu
-
+    Quên mật khẩu: Gửi mã OTP xác thực qua email
     Returns:
-        bool: True nếu quên mật khẩu thành công
-    
+        bool: True nếu gửi thành công
     Raises:
         AuthenticationError nếu email không tồn tại
     """
@@ -186,15 +198,25 @@ def forgot_password(data: ForgotPasswordInput) -> bool:
     if not user:
         raise AuthenticationError("Email not found!")
     
-    reset_token = secrets.token_urlsafe(32)
-    reset_expires = timezone.now() + timedelta(minutes = 5)
+    # Generate 6-digit OTP
+    otp_code = ''.join(secrets.choice(string.digits) for _ in range(6))
+    reset_expires = timezone.now() + timedelta(minutes=10)
     
-    user.password_reset_token = reset_token
+    user.password_reset_token = otp_code
     user.password_reset_expires = reset_expires
     user.save(update_fields=["password_reset_token", "password_reset_expires"])
     
-    # TODO: Gửi email chứa link reset (Hoàn thiện sau)
-    print(f"Reset password link: http://localhost:8000/reset-password/{reset_token}")
+    # Send OTP Email
+    EmailService.send_email(
+        recipient=user.email,
+        subject="[JobPortal] Mã xác thực đặt lại mật khẩu",
+        template_path="emails/auth/otp.html",
+        context={
+            "user_name": user.full_name,
+            "otp_code": otp_code,
+            "expiry_minutes": 10
+        }
+    )
     
     return True
     
@@ -271,8 +293,18 @@ def resend_verification(data: ResendVerificationInput) -> bool:
     user.email_verification_token = secrets.token_urlsafe(32)
     user.save(update_fields=["email_verification_token"])
 
-    # TODO: Gửi email chứa link verify (Hoàn thiện sau)
-    print(f"Verify email link: http://localhost:8000/verify-email/{user.email_verification_token}")
+    # Send Verification Email
+    verification_link = f"http://localhost:3000/auth/verify-email?token={user.email_verification_token}"
+    
+    EmailService.send_email(
+        recipient=user.email,
+        subject="[JobPortal] Gửi lại liên kết xác thực",
+        template_path="emails/auth/verify_email.html",
+        context={
+            "user_name": user.full_name,
+            "verification_link": verification_link
+        }
+    )
     
     return True
 

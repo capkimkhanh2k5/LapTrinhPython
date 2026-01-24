@@ -1,0 +1,46 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Nhắc nhở lịch phỏng vấn{% endblock %}
+
+{% block content %}
+<h2>Nhắc nhở phỏng vấn ⏰</h2>
+
+<p>Xin chào <strong>{{ candidate_name }}</strong>,</p>
+
+<p>Bạn có một lịch phỏng vấn sắp tới cho vị trí <strong>{{ job_title }}</strong> tại <strong>{{ company_name
+        }}</strong>.</p>
+
+<div class="highlight-box">
+    <div style="margin-bottom: 16px;">
+        <strong style="color: #4F46E5; display: block; margin-bottom: 4px;">THỜI GIAN</strong>
+        <span style="font-size: 18px;">{{ interview_time }}</span>
+    </div>
+
+    {% if address %}
+    <div style="margin-bottom: 16px;">
+        <strong style="color: #4F46E5; display: block; margin-bottom: 4px;">ĐỊA ĐIỂM</strong>
+        <span>{{ address }}</span>
+    </div>
+    {% endif %}
+
+    {% if meeting_link %}
+    <div>
+        <strong style="color: #4F46E5; display: block; margin-bottom: 4px;">LINK HỌP ONLINE</strong>
+        <a href="{{ meeting_link }}" style="color: #4F46E5; text-decoration: underline;">{{ meeting_link }}</a>
+    </div>
+    {% endif %}
+</div>
+
+{% if notes %}
+<div style="background-color: #FEF3C7; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+    <strong style="color: #D97706;">📝 Ghi chú từ nhà tuyển dụng:</strong>
+    <p style="margin: 8px 0 0; color: #92400E; font-style: italic;">"{{ notes }}"</p>
+</div>
+{% endif %}
+
+
+<p>Chúc bạn chuẩn bị tốt và có buổi phỏng vấn thành công!</p>
+
+<p>Trân trọng,<br><strong>{{ recruiter_name }}</strong><br><span style="color: #6B7280; font-size: 14px;">{{
+        company_name }}</span></p>
+{% endblock %}

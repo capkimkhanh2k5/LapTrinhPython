@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}JobPortal{% endblock %}</title>
+    <style>
+        /* Reset & Base */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #F8FAFC;
+            /* Slate 50 - Lighter, cooler gray */
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            color: #334155;
+            /* Slate 700 */
+            line-height: 1.6;
+        }
+
+        /* Container */
+        .wrapper {
+            width: 100%;
+            background-color: #F8FAFC;
+            padding: 40px 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            /* More rounded */
+            overflow: hidden;
+            /* Glass-like soft shadow */
+            box-shadow: 0 10px 40px -10px rgba(79, 70, 229, 0.15);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        /* Crystal Glass Header */
+        .header {
+            /* "Mirror Blue" Gradient: Deep Blue to Bright Cyan */
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 50%, #60A5FA 100%);
+            padding: 45px 40px 35px;
+            text-align: center;
+            /* Subtle inner shine for glass effect */
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo {
+            font-size: 30px;
+            font-weight: 800;
+            color: #FFFFFF !important;
+            text-decoration: none;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            /* Deep shadow text */
+            font-family: 'Segoe UI', sans-serif;
+            text-transform: uppercase;
+        }
+
+        /* Content */
+        .content {
+            padding: 40px;
+            background-color: #FFFFFF;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin-top: 0;
+            color: #0F172A;
+            /* Slate 900 */
+            letter-spacing: -0.5px;
+        }
+
+        p {
+            margin-bottom: 24px;
+            color: #475569;
+            /* Slate 600 */
+            font-size: 16px;
+        }
+
+        /* Glass Button V3 */
+        .btn {
+            display: inline-block;
+            /* Matching Blue Gradient */
+            background: linear-gradient(to right, #2563EB, #0EA5E9);
+            color: #FFFFFF !important;
+            font-weight: 700;
+            text-decoration: none;
+            padding: 14px 40px;
+            border-radius: 50px;
+            text-align: center;
+            margin: 15px 0 35px;
+            /* Glossy reflection shadow */
+            box-shadow: 0 10px 20px -10px rgba(37, 99, 235, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.4);
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #E2E8F0, transparent);
+            margin: 30px 0;
+            border: none;
+        }
+
+        /* Glass Highlight Box */
+        .highlight-box {
+            background-color: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            /* Subtle inner shadow for depth */
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #F1F5F9;
+            /* Slate 100 */
+            padding: 30px 40px;
+            text-align: center;
+            font-size: 13px;
+            color: #94A3B8;
+            /* Slate 400 */
+            border-top: 1px solid #E2E8F0;
+        }
+
+        .footer a {
+            color: #6366F1;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Helper for centered text blocks */
+        .text-center {
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 24px;
+            }
+
+            .header {
+                padding: 30px 24px;
+            }
+
+            .btn {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <a href="http://localhost:3000" class="logo">JobPortal</a>
+            </div>
+
+            <div class="content">
+                {% block content %}
+                {% endblock %}
+            </div>
+
+            <div class="footer">
+                <p style="margin: 0 0 10px;">&copy; {% now "Y" %} JobPortal. All rights reserved.</p>
+                <div style="margin-bottom: 10px;">
+                    <a href="#" style="margin: 0 8px;">Trang chủ</a> •
+                    <a href="#" style="margin: 0 8px;">Liên hệ</a> •
+                    <a href="#" style="margin: 0 8px;">Bảo mật</a>
+                </div>
+                <p style="margin: 0;">Email này được gửi tự động. Vui lòng không trả lời.</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

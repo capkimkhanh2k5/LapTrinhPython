@@ -1,0 +1,35 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Yêu cầu xác thực mới{% endblock %}
+
+{% block content %}
+<h2>Yêu cầu xác thực mới 🏢</h2>
+
+<p>Xin chào Admin,</p>
+<p>Hệ thống vừa nhận được yêu cầu xác thực từ doanh nghiệp sau:</p>
+
+<div class="highlight-box">
+    <h3 style="margin-bottom: 16px; color: #4F46E5;">{{ company_name }}</h3>
+
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 8px 0; color: #6B7280; width: 140px;">Người yêu cầu:</td>
+            <td style="padding: 8px 0; font-weight: 500;">{{ requester_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; color: #6B7280;">Email:</td>
+            <td style="padding: 8px 0; font-weight: 500;">{{ requester_email }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; color: #6B7280;">Ngày đăng ký:</td>
+            <td style="padding: 8px 0; font-weight: 500;">{{ created_at }}</td>
+        </tr>
+    </table>
+</div>
+
+<p>Vui lòng kiểm tra hồ sơ và xử lý yêu cầu.</p>
+
+<div style="text-align: center;">
+    <a href="{{ admin_dashboard_link }}" class="btn">Xem chi tiết & Duyệt</a>
+</div>
+{% endblock %}

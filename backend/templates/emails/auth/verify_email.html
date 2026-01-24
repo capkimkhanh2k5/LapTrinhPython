@@ -1,0 +1,20 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Xác thực Email{% endblock %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h2 style="font-size: 24px;">Chào mừng đến với Jobio! 👋</h2>
+
+    <p>Cảm ơn <strong>{{ user_name }}</strong> đã đăng ký tài khoản. Để bắt đầu hành trình tìm kiếm việc làm, vui lòng
+        xác thực địa chỉ email của bạn.</p>
+
+    <a href="{{ verification_link }}" class="btn" style="margin: 24px 0;">Xác thực Email ngay</a>
+
+    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #E5E7EB; text-align: left;">
+        <p style="font-size: 13px; color: #6B7280; margin-bottom: 8px;">Nếu nút bên trên không hoạt động, hãy copy đường
+            dẫn này:</p>
+        <p style="font-size: 13px; color: #4F46E5; word-break: break-all;">{{ verification_link }}</p>
+    </div>
+</div>
+{% endblock %}

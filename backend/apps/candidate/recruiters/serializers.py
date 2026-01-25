@@ -83,11 +83,6 @@ class RecruiterSearchFilterSerializer(serializers.Serializer):
     min_experience = serializers.IntegerField()
     job_status = serializers.CharField()
 
-#TODO: Xử lí OTP SMS hoặc telegram sau
-class PhoneVerificationSerializer(serializers.Serializer):
-    phone = serializers.CharField()
-    otp_code = serializers.CharField(required=False) #TODO: Có thể xử lí OTP SMS hoặc telegram sau
-
 class MatchingJobSerializer(serializers.Serializer):
     job_id = serializers.IntegerField()
     job_title = serializers.CharField()

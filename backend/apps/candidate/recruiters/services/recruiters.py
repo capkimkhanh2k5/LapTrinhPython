@@ -193,18 +193,3 @@ def update_recruiter_privacy_service(recruiter: Recruiter, is_public: bool) -> R
     recruiter.is_profile_public = is_public
     recruiter.save()
     return recruiter
-
-#TODO: Thực hiện xác minh số điện thoại với SMS hoặc Telegram sau khi có API
-def send_phone_otp_service(user, phone: str) -> bool:
-    # def send_phone_otp_service(user, phone: str) -> bool:
-    #     - Generate OTP, store in cache/db
-    #     - Send SMS via Twilio/other provider
-    #     - Return: success status
-    return True
-
-#TODO: Thực hiện xác minh số điện thoại với SMS hoặc Telegram sau khi có API
-def verify_phone_otp_service(user, otp_code: str) -> bool:
-    #     - Validate OTP from cache/db
-    #     - Update user.phone_verified = True
-    #     - Return: success status
-    return True

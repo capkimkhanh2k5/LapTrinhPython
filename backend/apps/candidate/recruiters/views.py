@@ -209,21 +209,6 @@ class RecruiterViewSet(viewsets.GenericViewSet):
         recruiters = search_recruiters(request.query_params)
         return Response(RecruiterSerializer(recruiters, many=True).data)
 
-    #TODO: Thực hiện xác minh số điện thoại với SMS hoặc Telegram sau khi có API
-    @action(detail=True, methods=['post'], url_path='verify-phone')
-    def verify_phone(self, request, pk=None):
-        """
-        POST /api/recruiters/:id/verify-phone - Xác minh số điện thoại
-        """
-        recruiter = get_recruiter_by_id(pk)
-        if not recruiter:
-            return Response({"detail": "Not found recruiter"}, status=status.HTTP_404_NOT_FOUND)
-        
-        if recruiter.user != request.user:
-             return Response({"detail": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-        
-        return Response({"detail": "Phone number verified"}, status=status.HTTP_200_OK)
-
     @action(detail=True, methods=['get'], url_path='matching-jobs')
     def matching_jobs(self, request, pk=None):
         """

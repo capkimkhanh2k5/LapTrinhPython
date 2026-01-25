@@ -27,3 +27,8 @@ redis>=5.0.0
 pymongo>=4.6.1
 dnspython>=2.6.0
 google-generativeai>=0.8.0
+
+# Async Task Queue
+celery>=5.4.0
+django-celery-results>=2.5.0
+django-celery-beat>=2.6.0

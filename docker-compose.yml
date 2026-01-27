@@ -12,15 +12,18 @@ services:
       - DEBUG=1
       - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 0.0.0.0 backend
       - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - MONGO_URI=mongodb://mongo:27017/
       - MONGO_DB_NAME=jobportal_chat
       - DB_HOST=postgres
+      - DB_PORT=5432
       - DB_NAME=jobportal_db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
     depends_on:
       - postgres
       - redis
+      - mongo
 
   postgres:
     image: postgres:15-alpine

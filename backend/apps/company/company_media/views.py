@@ -1,7 +1,7 @@
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 
 from .serializers import (
@@ -30,7 +30,7 @@ class CompanyMediaViewSet(viewsets.ViewSet):
     ViewSet quản lý media của công ty.
     """
     permission_classes = [IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def list(self, request, company_id=None):
         """Lấy danh sách media"""

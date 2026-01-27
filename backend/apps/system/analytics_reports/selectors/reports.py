@@ -2,17 +2,14 @@ from django.db.models import QuerySet
 from ..models import AnalyticsReport
 
 
+from ..policies import AnalyticsReportPolicy
+
 def list_reports(user, filters: dict = None) -> QuerySet[AnalyticsReport]:
-    """List analytics reports"""
+    """List analytics reports with policy-based access control"""
     queryset = AnalyticsReport.objects.select_related('report_type', 'generated_by').all()
     
-    # Logic cho phép admin xem tất cả báo cáo, còn người dùng chỉ thấy các báo cáo của mình
-    #TODO: Check lại
-
-    if not user.is_staff:
-        if not hasattr(user, 'company_profile'):
-             return AnalyticsReport.objects.none()
-        queryset = queryset.filter(company=user.company_profile)
+    # Delegate permission logic to Policy
+    queryset = AnalyticsReportPolicy.scope(user, queryset)
              
     if filters:
         if filters.get('type'):

@@ -1,8 +1,12 @@
-import pytest
+"""
+Integrated Auth APIs Tests - Django TestCase Version
+"""
 import secrets
 import pyotp
 from unittest.mock import patch
 from datetime import timedelta
+from django.test import TestCase
+from rest_framework.test import APITestCase
 from rest_framework import status
 from django.utils import timezone
 from apps.core.users.models import CustomUser
@@ -20,15 +24,24 @@ AUTH_CHANGE_PASSWORD = '/api/users/auth/change-password/'
 AUTH_VERIFY_2FA = '/api/users/auth/verify-2fa/'
 AUTH_TOKEN_REFRESH = '/api/users/auth/refresh-token/'
 
+
 def auth_social_login(provider):
     return f'/api/users/auth/social/{provider}/'
 
 
-@pytest.mark.django_db
-class TestIntegratedAuthAPIs:
+class TestIntegratedAuthAPIs(APITestCase):
+    """Test cases for integrated auth APIs"""
     
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            email="test@example.com",
+            password="password123",
+            full_name="Test User",
+            role="recruiter",
+            status="active"
+        )
     
-    def test_register_success(self, api_client):
+    def test_register_success(self):
         data = {
             'email': 'newuser@example.com',
             'password': 'password123',
@@ -36,125 +49,125 @@ class TestIntegratedAuthAPIs:
             'full_name': 'New User',
             'role': 'recruiter'
         }
-        response = api_client.post(AUTH_REGISTER, data)
-        assert response.status_code == status.HTTP_201_CREATED
-        assert 'access_token' in response.data
-        assert 'refresh_token' in response.data
-        assert response.data['user']['email'] == 'newuser@example.com'
+        response = self.client.post(AUTH_REGISTER, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn('access_token', response.data)
+        self.assertIn('refresh_token', response.data)
+        self.assertEqual(response.data['user']['email'], 'newuser@example.com')
 
-    def test_login_success(self, api_client, user):
-        user.set_password('password123')
-        user.save()
+    def test_login_success(self):
+        self.user.set_password('password123')
+        self.user.save()
         
         data = {
-            'email': user.email,
+            'email': self.user.email,
             'password': 'password123'
         }
-        response = api_client.post(AUTH_LOGIN, data)
-        assert response.status_code == status.HTTP_200_OK
-        assert 'access_token' in response.data
+        response = self.client.post(AUTH_LOGIN, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('access_token', response.data)
 
-    def test_auth_me_success(self, api_client, user):
-        api_client.force_authenticate(user=user)
-        response = api_client.get(AUTH_ME)
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['email'] == user.email
+    def test_auth_me_success(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(AUTH_ME)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], self.user.email)
 
-    def test_logout_success(self, api_client, user):
-        user.set_password('password123')
-        user.save()
+    def test_logout_success(self):
+        self.user.set_password('password123')
+        self.user.save()
         
         # Login first to get refresh token
-        login_resp = api_client.post(AUTH_LOGIN, {'email': user.email, 'password': 'password123'})
+        login_resp = self.client.post(AUTH_LOGIN, {'email': self.user.email, 'password': 'password123'})
         refresh_token = login_resp.data['refresh_token']
         
         # Logout
-        api_client.force_authenticate(user=user)
-        response = api_client.post(AUTH_LOGOUT, {'refresh_token': refresh_token})
-        assert response.status_code == status.HTTP_200_OK
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(AUTH_LOGOUT, {'refresh_token': refresh_token})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_refresh_token_success(self, api_client, user):
-        user.set_password('password123')
-        user.save()
-        login_resp = api_client.post(AUTH_LOGIN, {'email': user.email, 'password': 'password123'})
+    def test_refresh_token_success(self):
+        self.user.set_password('password123')
+        self.user.save()
+        login_resp = self.client.post(AUTH_LOGIN, {'email': self.user.email, 'password': 'password123'})
         refresh_token = login_resp.data['refresh_token']
         
-        response = api_client.post(AUTH_TOKEN_REFRESH, {'refresh': refresh_token})
-        assert response.status_code == status.HTTP_200_OK
-        assert 'access' in response.data
+        response = self.client.post(AUTH_TOKEN_REFRESH, {'refresh': refresh_token})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', response.data)
 
     # --- 2. Email & Password Flows ---
 
-    def test_check_email_exists(self, api_client, user):
-        response = api_client.post(AUTH_CHECK_EMAIL, {'email': user.email})
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['exists'] is True
+    def test_check_email_exists(self):
+        response = self.client.post(AUTH_CHECK_EMAIL, {'email': self.user.email})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['exists'])
 
-    def test_check_email_not_exists(self, api_client):
-        response = api_client.post(AUTH_CHECK_EMAIL, {'email': 'nobody@example.com'})
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['exists'] is False
+    def test_check_email_not_exists(self):
+        response = self.client.post(AUTH_CHECK_EMAIL, {'email': 'nobody@example.com'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['exists'])
 
-    def test_forgot_password_success(self, api_client, user):
-        response = api_client.post(AUTH_FORGOT_PASSWORD, {'email': user.email})
-        assert response.status_code == status.HTTP_200_OK
-        user.refresh_from_db()
-        assert user.password_reset_token is not None
+    def test_forgot_password_success(self):
+        response = self.client.post(AUTH_FORGOT_PASSWORD, {'email': self.user.email})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertIsNotNone(self.user.password_reset_token)
 
-    def test_reset_password_success(self, api_client, user):
+    def test_reset_password_success(self):
         token = secrets.token_urlsafe(32)
-        user.password_reset_token = token
-        user.password_reset_expires = timezone.now() + timedelta(minutes=5)
-        user.save()
+        self.user.password_reset_token = token
+        self.user.password_reset_expires = timezone.now() + timedelta(minutes=5)
+        self.user.save()
 
         data = {
             'token': token,
             'new_password': 'newpass123',
             'new_password_confirm': 'newpass123'
         }
-        response = api_client.post(AUTH_RESET_PASSWORD, data)
-        assert response.status_code == status.HTTP_200_OK
-        user.refresh_from_db()
-        assert user.check_password('newpass123')
+        response = self.client.post(AUTH_RESET_PASSWORD, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('newpass123'))
 
-    def test_verify_email_success(self, api_client, user):
+    def test_verify_email_success(self):
         token = "verify123"
-        user.email_verification_token = token
-        user.email_verified = False
-        user.save()
+        self.user.email_verification_token = token
+        self.user.email_verified = False
+        self.user.save()
         
-        response = api_client.post(AUTH_VERIFY_EMAIL, {'email_verification_token': token})
-        assert response.status_code == status.HTTP_200_OK
-        user.refresh_from_db()
-        assert user.email_verified is True
+        response = self.client.post(AUTH_VERIFY_EMAIL, {'email_verification_token': token})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.email_verified)
 
-    def test_resend_verification_success(self, api_client, user):
-        user.email_verified = False
-        user.save()
-        response = api_client.post(AUTH_RESEND_VERIFICATION, {'email': user.email})
-        assert response.status_code == status.HTTP_200_OK
-        user.refresh_from_db()
-        assert user.email_verification_token is not None
+    def test_resend_verification_success(self):
+        self.user.email_verified = False
+        self.user.save()
+        response = self.client.post(AUTH_RESEND_VERIFICATION, {'email': self.user.email})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertIsNotNone(self.user.email_verification_token)
 
-    def test_change_password_success(self, api_client, user):
-        user.set_password('oldpass123')
-        user.save()
-        api_client.force_authenticate(user=user)
+    def test_change_password_success(self):
+        self.user.set_password('oldpass123')
+        self.user.save()
+        self.client.force_authenticate(user=self.user)
         
         data = {
             'old_password': 'oldpass123',
             'new_password': 'newpass123',
             'new_password_confirm': 'newpass123'
         }
-        response = api_client.post(AUTH_CHANGE_PASSWORD, data)
-        assert response.status_code == status.HTTP_200_OK
-        user.refresh_from_db()
-        assert user.check_password('newpass123')
+        response = self.client.post(AUTH_CHANGE_PASSWORD, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('newpass123'))
 
     # --- 3. Social Login (Mocked) ---
 
     @patch('apps.core.users.services.auth.requests.get')
-    def test_social_login_google_success(self, mock_get, api_client):
+    def test_social_login_google_success(self, mock_get):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {
             'email': 'googleuser@example.com',
@@ -168,13 +181,13 @@ class TestIntegratedAuthAPIs:
             'email': 'googleuser@example.com',
             'full_name': 'Google User'
         }
-        response = api_client.post(auth_social_login('google'), data)
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['user']['email'] == 'googleuser@example.com'
-        assert CustomUser.objects.filter(email='googleuser@example.com').exists()
+        response = self.client.post(auth_social_login('google'), data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['user']['email'], 'googleuser@example.com')
+        self.assertTrue(CustomUser.objects.filter(email='googleuser@example.com').exists())
 
     @patch('apps.core.users.services.auth.requests.get')
-    def test_social_login_facebook_success(self, mock_get, api_client):
+    def test_social_login_facebook_success(self, mock_get):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {
             'id': '123',
@@ -188,12 +201,12 @@ class TestIntegratedAuthAPIs:
             'email': 'fbuser@example.com',
             'full_name': 'FB User'
         }
-        response = api_client.post(auth_social_login('facebook'), data)
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['user']['email'] == 'fbuser@example.com'
+        response = self.client.post(auth_social_login('facebook'), data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['user']['email'], 'fbuser@example.com')
 
     @patch('apps.core.users.services.auth.requests.get')
-    def test_social_login_linkedin_success(self, mock_get, api_client):
+    def test_social_login_linkedin_success(self, mock_get):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {
             'localizedFirstName': 'LinkedIn',
@@ -207,34 +220,34 @@ class TestIntegratedAuthAPIs:
             'email': 'linkedinuser@example.com',
             'full_name': 'LinkedIn User'
         }
-        response = api_client.post(auth_social_login('linkedin'), data)
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['user']['email'] == 'linkedinuser@example.com'
+        response = self.client.post(auth_social_login('linkedin'), data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['user']['email'], 'linkedinuser@example.com')
 
     # --- 4. 2FA Verification ---
 
-    def test_verify_2fa_success(self, api_client, user):
+    def test_verify_2fa_success(self):
         secret = pyotp.random_base32()
-        user.two_factor_secret = secret
-        user.two_factor_enabled = True
-        user.save()
+        self.user.two_factor_secret = secret
+        self.user.two_factor_enabled = True
+        self.user.save()
         
         totp = pyotp.TOTP(secret)
         current_code = totp.now()
         
-        api_client.force_authenticate(user=user)
-        response = api_client.post(AUTH_VERIFY_2FA, {'code': current_code})
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(AUTH_VERIFY_2FA, {'code': current_code})
         
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data is True
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data)
 
-    def test_verify_2fa_failure(self, api_client, user):
+    def test_verify_2fa_failure(self):
         secret = pyotp.random_base32()
-        user.two_factor_secret = secret
-        user.two_factor_enabled = True
-        user.save()
+        self.user.two_factor_secret = secret
+        self.user.two_factor_enabled = True
+        self.user.save()
         
-        api_client.force_authenticate(user=user)
-        response = api_client.post(AUTH_VERIFY_2FA, {'code': '000000'})
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(AUTH_VERIFY_2FA, {'code': '000000'})
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

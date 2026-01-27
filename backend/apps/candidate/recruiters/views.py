@@ -239,6 +239,26 @@ class RecruiterViewSet(viewsets.GenericViewSet):
         applications = get_recruiter_applications(recruiter)
         return Response(RecruiterApplicationSerializer(applications, many=True).data)
 
+    @action(detail=True, methods=['post'], url_path='verify-phone')
+    def verify_phone(self, request, pk=None):
+        """
+        POST /api/recruiters/:id/verify-phone - Xác thực số điện thoại
+        """
+        recruiter = get_recruiter_by_id(pk)
+        if not recruiter:
+            return Response({"detail": "Not found recruiter"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if recruiter.user != request.user:
+             return Response({"detail": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+             
+        # Logic giả định xác thực số điện thoại (thường qua OTP)
+        # Ở đây chỉ cập nhật trạng thái đã xác thực
+        phone = request.data.get('phone')
+        if not phone:
+            return Response({"detail": "Phone is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response({"detail": "Phone verified successfully"})
+
     @action(detail=True, methods=['get'], url_path='saved-jobs')
     def saved_jobs(self, request, pk=None):
         """

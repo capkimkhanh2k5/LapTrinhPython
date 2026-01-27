@@ -22,7 +22,7 @@ class MongoChatService:
         return db['messages']
 
     @classmethod
-    def save_message(cls, thread_id: int, sender_id: int, sender_name: str, sender_avatar: str, content: str, attachments=None):
+    def save_message(cls, thread_id: int, sender_id: int, sender_name: str, sender_avatar: str, content: str, attachments=None, message_id=None):
         """
         Lưu tin nhắn vào MongoDB.
         """
@@ -40,16 +40,61 @@ class MongoChatService:
             "updated_at": datetime.utcnow()
         }
         
+        if message_id:
+            try:
+                doc["_id"] = ObjectId(message_id)
+            except InvalidId:
+                pass # Let Mongo generate if invalid
+        
         result = collection.insert_one(doc)
         
-        # Return dict giống format cũ để Consumer dễ xử lý
-        # Create a copy to avoid mutating the doc passed to insert_one
+        # Return dict giống format cũ
         ret_doc = doc.copy()
         ret_doc['id'] = str(result.inserted_id)
+        if '_id' in ret_doc:
+            del ret_doc['_id']
+            
         ret_doc['created_at'] = ret_doc['created_at'].isoformat()
         ret_doc['updated_at'] = ret_doc['updated_at'].isoformat()
         
         return ret_doc
+
+    @classmethod
+    def increment_unread_counters(cls, thread_id: int, recipient_ids: list[int]):
+        """
+        Increment unread count for recipients.
+        """
+        if not recipient_ids:
+            return
+            
+        db = cls._get_db()
+        counters_col = db['unread_counters']
+        
+        # Use bulk_write for performance
+        operations = [
+            pymongo.UpdateOne(
+                {"user_id": uid, "thread_id": thread_id},
+                {"$inc": {"count": 1}, "$set": {"last_updated": datetime.utcnow()}},
+                upsert=True
+            ) for uid in recipient_ids
+        ]
+        
+        if operations:
+            counters_col.bulk_write(operations)
+
+    @classmethod
+    def mark_read(cls, user_id: int, thread_id: int):
+        """
+        Reset unread count to 0 for a user in a thread.
+        """
+        db = cls._get_db()
+        counters_col = db['unread_counters']
+        
+        counters_col.update_one(
+            {"user_id": user_id, "thread_id": thread_id},
+            {"$set": {"count": 0, "last_updated": datetime.utcnow()}},
+            upsert=True
+        )
 
     @classmethod
     def get_messages(cls, thread_id: int, limit=50, offset=0):
@@ -99,3 +144,21 @@ class MongoChatService:
 
         collection.delete_one({"_id": obj_id})
         return True
+
+    @classmethod
+    def get_total_unread_count(cls, user_id: int) -> int:
+        """
+        Get total unread messages for a user across all threads.
+        """
+        db = cls._get_db()
+        counters_col = db['unread_counters']
+        
+        pipeline = [
+            {"$match": {"user_id": user_id}},
+            {"$group": {"_id": None, "total": {"$sum": "$count"}}}
+        ]
+        
+        result = list(counters_col.aggregate(pipeline))
+        if result:
+            return result[0]['total']
+        return 0

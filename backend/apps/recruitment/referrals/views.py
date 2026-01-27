@@ -68,35 +68,37 @@ class ReferralViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if hasattr(user, 'company_profile'): 
-            #TODO: Cần kiểm tra lại logic này
-
-            # If requesting as company, show received referrals
-            # Note: A user can be both referrer and company owner. 
-            # This logic needs to be clear based on endpoint or query param.
-            # Assuming standard ViewSet lists "Manageable" items for Company, "Owned" items for User.
-            # But here, let's distinguish via action or default behavior.
-            # Default: If Company Owner, show company referrals. If Candidate, show my referrals.
-            if user.role == 'employer': # Assuming role field
-                 return ReferralSelector.list_company_referrals(user.company_profile)
+        
+        # Determine view based on context
+        is_employer = (user.role == 'employer') or hasattr(user, 'company_profile')
+        
+        # If explicitly asking for user's own referrals (made as a candidate)
+        if self.action == 'my_referrals':
+            return ReferralSelector.list_my_referrals(user)
+            
+        # Default behavior:
+        if is_employer:
+             return ReferralSelector.list_company_referrals(user.company_profile)
         
         return ReferralSelector.list_my_referrals(user)
 
     def create(self, request, *args, **kwargs):
         service = ReferralService()
         try:
-            # Pydantic Validation handled manually or via simple mapping
-            data = request.data
+            # Serializer handles mapping
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            data = serializer.validated_data
             input_data = ReferralCreateInput(
-                program_id=data.get('program_id'),
-                job_id=data.get('job_id'),
-                candidate_name=data.get('candidate_name'),
-                candidate_email=data.get('candidate_email'),
-                candidate_phone=data.get('candidate_phone'),
+                program_id=data['program_id'],
+                job_id=data['job_id'],
+                candidate_name=data['candidate_name'],
+                candidate_email=data['candidate_email'],
+                candidate_phone=data['candidate_phone'],
                 notes=data.get('notes', '')
             )
             
-            # Using FILE from request.FILES
             cv_file = request.FILES.get('cv_file_upload')
             if not cv_file:
                 return Response({'error': 'CV File is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -111,7 +113,7 @@ class ReferralViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='my-referrals')
     def my_referrals(self, request):
         """Explicit endpoint for users to see their referrals"""
-        qs = ReferralSelector.list_my_referrals(request.user)
+        qs = self.get_queryset()
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -122,17 +124,12 @@ class ReferralViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='mark-paid', permission_classes=[IsCompanyOwner])
     def mark_paid(self, request, pk=None):
         referral = self.get_object()
-
-        #TODO: Cần kiểm tra lại logic này
-        
-        # Verify ownership is handled by get_queryset (if company) or manual check
-        # Assuming get_queryset returns company referrals for company user
-        if referral.status != Referral.Status.HIRED:
-             return Response({'error': 'Referral must be HIRED before marking as PAID'}, status=status.HTTP_400_BAD_REQUEST)
-        
         service = ReferralService()
-        updated_referral = service.update_status(referral, Referral.Status.PAID)
-        return Response(ReferralSerializer(updated_referral).data)
+        try:
+            updated_referral = service.mark_as_paid(referral, actor=request.user)
+            return Response(ReferralSerializer(updated_referral).data)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['patch'], url_path='update-status', permission_classes=[IsCompanyOwner])
     def update_status_action(self, request, pk=None):
@@ -142,5 +139,8 @@ class ReferralViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Status is required'}, status=status.HTTP_400_BAD_REQUEST)
             
         service = ReferralService()
-        updated_referral = service.update_status(referral, new_status)
-        return Response(ReferralSerializer(updated_referral).data)
+        try:
+            updated_referral = service.update_status(referral, new_status, actor=request.user)
+            return Response(ReferralSerializer(updated_referral).data)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

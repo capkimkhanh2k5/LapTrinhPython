@@ -1,4 +1,4 @@
-#TODO: Đã chuyển sang Gemini API
+# Semantic Calculator using Gemini API
 import logging
 from decimal import Decimal
 from typing import Optional
@@ -197,5 +197,5 @@ def _build_recruiter_text(recruiter) -> str:
 
 def is_semantic_enabled() -> bool:
     """Check if semantic matching is enabled (Gemini configured)."""
-    # GeminiService._configure() checks settings and returns boolean
-    return GeminiService._configure()
+    # GeminiService._get_client() returns None if API key not configured
+    return GeminiService._get_client() is not None

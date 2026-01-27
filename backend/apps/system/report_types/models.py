@@ -30,6 +30,7 @@ class ReportType(models.Model):
     
     class Meta:
         db_table = 'report_types'
+        app_label = 'system_report_types'
         verbose_name = 'Loại báo cáo'
         verbose_name_plural = 'Loại báo cáo'
     

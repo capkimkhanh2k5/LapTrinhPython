@@ -10,7 +10,8 @@ class RecruiterViewTest(APITestCase):
         self.user2 = CustomUser.objects.create_user(email="test2@example.com", password="password123", full_name="User 2")
         self.client.force_authenticate(user=self.user)
         
-        self.list_url = reverse('recruiter-list') 
+        # Use direct URL path instead of reverse() to avoid namespace issues
+        self.list_url = '/api/recruiters/' 
 
     def test_create_recruiter_profile(self):
         data = {
@@ -37,7 +38,7 @@ class RecruiterViewTest(APITestCase):
 
     def test_retrieve_recruiter(self):
         recruiter = Recruiter.objects.create(user=self.user, bio="Test")
-        url = reverse('recruiter-detail', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['bio'], "Test")
@@ -45,7 +46,7 @@ class RecruiterViewTest(APITestCase):
 
     def test_update_recruiter_owner(self):
         recruiter = Recruiter.objects.create(user=self.user, bio="Old")
-        url = reverse('recruiter-detail', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/'
         data = {"bio": "New"}
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -57,7 +58,7 @@ class RecruiterViewTest(APITestCase):
 
     def test_update_recruiter_not_owner(self):
         recruiter2 = Recruiter.objects.create(user=self.user2, bio="User 2")
-        url = reverse('recruiter-detail', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/'
         data = {"bio": "Hacked"}
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -68,21 +69,21 @@ class RecruiterViewTest(APITestCase):
 
     def test_delete_recruiter_owner(self):
         recruiter = Recruiter.objects.create(user=self.user)
-        url = reverse('recruiter-detail', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Recruiter.objects.count(), 0)
 
     def test_delete_recruiter_not_owner(self):
         recruiter2 = Recruiter.objects.create(user=self.user2)
-        url = reverse('recruiter-detail', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(Recruiter.objects.count(), 1)
 
     def test_update_job_search_status(self):
         recruiter = Recruiter.objects.create(user=self.user, job_search_status='active')
-        url = reverse('recruiter-update-status', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/job-search-status/'
         
         data = {"job_search_status": "not_looking"}
         response = self.client.patch(url, data)
@@ -92,7 +93,7 @@ class RecruiterViewTest(APITestCase):
         
     def test_update_job_search_status_invalid(self):
         recruiter = Recruiter.objects.create(user=self.user, job_search_status='active')
-        url = reverse('recruiter-update-status', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/job-search-status/'
         
         data = {"job_search_status": "invalid_status"}
         response = self.client.patch(url, data)
@@ -107,7 +108,7 @@ class RecruiterViewTest(APITestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         
         recruiter = Recruiter.objects.create(user=self.user)
-        url = reverse('recruiter-upload-avatar', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/avatar/'
         
         # Create a test image
         image = Image.new('RGB', (100, 100), color='red')
@@ -131,7 +132,7 @@ class RecruiterViewTest(APITestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         
         recruiter2 = Recruiter.objects.create(user=self.user2)
-        url = reverse('recruiter-upload-avatar', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/avatar/'
         
         image = Image.new('RGB', (100, 100), color='red')
         buffer = BytesIO()
@@ -150,7 +151,7 @@ class RecruiterViewTest(APITestCase):
     def test_upload_avatar_unauthenticated(self):
         """Test POST avatar without auth returns 401"""
         recruiter = Recruiter.objects.create(user=self.user)
-        url = reverse('recruiter-upload-avatar', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/avatar/'
         
         self.client.logout()
         response = self.client.post(url, {}, format='multipart')
@@ -159,14 +160,14 @@ class RecruiterViewTest(APITestCase):
     def test_upload_avatar_no_file(self):
         """Test POST avatar without file returns 400"""
         recruiter = Recruiter.objects.create(user=self.user)
-        url = reverse('recruiter-upload-avatar', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/avatar/'
         
         response = self.client.post(url, {}, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
     def test_upload_avatar_recruiter_not_found(self):
         """Test POST avatar with non-existent recruiter returns 404"""
-        url = reverse('recruiter-upload-avatar', args=[99999])
+        url = '/api/recruiters/99999/avatar/'
         
         from PIL import Image
         from io import BytesIO
@@ -191,7 +192,7 @@ class RecruiterViewTest(APITestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         
         recruiter = Recruiter.objects.create(user=self.user)
-        url = reverse('recruiter-upload-avatar', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/avatar/'
         
         # Create a text file (not an image)
         text_file = SimpleUploadedFile(
@@ -208,7 +209,7 @@ class RecruiterViewTest(APITestCase):
     def test_get_profile_completeness(self):
         """Test GET /api/recruiters/:id/profile-completeness"""
         recruiter = Recruiter.objects.create(user=self.user, bio="Test Bio", current_position="Developer")
-        url = reverse('recruiter-get-completeness', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/profile-completeness/'
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -220,14 +221,14 @@ class RecruiterViewTest(APITestCase):
     def test_get_profile_completeness_not_owner(self):
         """Only owner can view detailed completeness"""
         recruiter2 = Recruiter.objects.create(user=self.user2)
-        url = reverse('recruiter-get-completeness', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/profile-completeness/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_public_profile_visible(self):
         """Test GET /api/recruiters/:id/public_profile when profile is public"""
         recruiter = Recruiter.objects.create(user=self.user, bio="Public Bio", is_profile_public=True)
-        url = reverse('recruiter-public-profile', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/public_profile/'
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -236,7 +237,7 @@ class RecruiterViewTest(APITestCase):
     def test_public_profile_hidden(self):
         """Test GET /api/recruiters/:id/public_profile when profile is private"""
         recruiter2 = Recruiter.objects.create(user=self.user2, bio="Private Bio", is_profile_public=False)
-        url = reverse('recruiter-public-profile', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/public_profile/'
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -244,7 +245,7 @@ class RecruiterViewTest(APITestCase):
     def test_update_privacy(self):
         """Test PATCH /api/recruiters/:id/privacy"""
         recruiter = Recruiter.objects.create(user=self.user, is_profile_public=True)
-        url = reverse('recruiter-update-privacy', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/privacy/'
         
         response = self.client.patch(url, {"is_profile_public": False})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -255,7 +256,7 @@ class RecruiterViewTest(APITestCase):
     def test_update_privacy_not_owner(self):
         """Only owner can update privacy"""
         recruiter2 = Recruiter.objects.create(user=self.user2, is_profile_public=True)
-        url = reverse('recruiter-update-privacy', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/privacy/'
         
         response = self.client.patch(url, {"is_profile_public": False})
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -263,7 +264,7 @@ class RecruiterViewTest(APITestCase):
     def test_get_stats(self):
         """Test GET /api/recruiters/:id/stats"""
         recruiter = Recruiter.objects.create(user=self.user, profile_views_count=100)
-        url = reverse('recruiter-get-stats', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/stats/'
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -274,7 +275,7 @@ class RecruiterViewTest(APITestCase):
     def test_get_stats_not_owner(self):
         """Only owner can view stats"""
         recruiter2 = Recruiter.objects.create(user=self.user2)
-        url = reverse('recruiter-get-stats', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/stats/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -283,21 +284,21 @@ class RecruiterViewTest(APITestCase):
     def test_verify_phone(self):
         """Test POST /api/recruiters/:id/verify-phone"""
         recruiter = Recruiter.objects.create(user=self.user)
-        url = reverse('recruiter-verify-phone', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/verify-phone/'
         response = self.client.post(url, {"phone": "0123456789"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_verify_phone_not_owner(self):
         """Only owner can verify phone"""
         recruiter2 = Recruiter.objects.create(user=self.user2)
-        url = reverse('recruiter-verify-phone', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/verify-phone/'
         response = self.client.post(url, {"phone": "0123456789"})
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_matching_jobs(self):
         """Test GET /api/recruiters/:id/matching-jobs"""
         recruiter = Recruiter.objects.create(user=self.user)
-        url = reverse('recruiter-matching-jobs', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/matching-jobs/'
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -306,14 +307,14 @@ class RecruiterViewTest(APITestCase):
     def test_matching_jobs_not_owner(self):
         """Only owner can view matching jobs"""
         recruiter2 = Recruiter.objects.create(user=self.user2)
-        url = reverse('recruiter-matching-jobs', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/matching-jobs/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_applications(self):
         """Test GET /api/recruiters/:id/applications"""
         recruiter = Recruiter.objects.create(user=self.user)
-        url = reverse('recruiter-applications', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/applications/'
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -321,14 +322,14 @@ class RecruiterViewTest(APITestCase):
     def test_applications_not_owner(self):
         """Only owner can view applications"""
         recruiter2 = Recruiter.objects.create(user=self.user2)
-        url = reverse('recruiter-applications', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/applications/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_saved_jobs(self):
         """Test GET /api/recruiters/:id/saved-jobs"""
         recruiter = Recruiter.objects.create(user=self.user)
-        url = reverse('recruiter-saved-jobs', args=[recruiter.id])
+        url = f'/api/recruiters/{recruiter.id}/saved-jobs/'
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -336,7 +337,7 @@ class RecruiterViewTest(APITestCase):
     def test_saved_jobs_not_owner(self):
         """Only owner can view saved jobs"""
         recruiter2 = Recruiter.objects.create(user=self.user2)
-        url = reverse('recruiter-saved-jobs', args=[recruiter2.id])
+        url = f'/api/recruiters/{recruiter2.id}/saved-jobs/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -355,7 +356,7 @@ class RecruiterViewTest(APITestCase):
         # Create some public recruiters
         Recruiter.objects.create(user=self.user, is_profile_public=True, job_search_status='active')
         
-        url = reverse('recruiter-search')
+        url = '/api/recruiters/search/'
         response = self.client.get(url)
         
         # Should succeed for company users (if is_company check passes)
@@ -364,6 +365,6 @@ class RecruiterViewTest(APITestCase):
 
     def test_search_recruiters_non_company(self):
         """Non-company users cannot search recruiters"""
-        url = reverse('recruiter-search')
+        url = '/api/recruiters/search/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

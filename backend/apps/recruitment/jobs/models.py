@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.indexes import GinIndex
 
 
 class Job(models.Model):
@@ -192,6 +193,12 @@ class Job(models.Model):
         indexes = [
             models.Index(fields=['company', 'status'], name='idx_jobs_company_status'),
             models.Index(fields=['category', 'status'], name='idx_jobs_category_status'),
+            # FTS Index
+            GinIndex(
+                fields=['title', 'description'], 
+                name='idx_jobs_title_desc_gin',
+                opclasses=['gin_trgm_ops', 'gin_trgm_ops']
+            ),
         ]
     
     def __str__(self):

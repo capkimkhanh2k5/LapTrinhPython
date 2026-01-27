@@ -7,6 +7,8 @@ from django.utils import timezone
 from apps.communication.message_threads.models import MessageThread
 from apps.communication.message_participants.models import MessageParticipant
 from apps.communication.messages.services.mongo_service import MongoChatService
+from apps.communication.messages.tasks import persist_chat_message_task
+from bson import ObjectId
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -101,22 +103,35 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }))
             return
         
-        # Lưu tin nhắn vào database
-        message = await self.save_message(content)
+        # Generate message ID immediately for fast UI feedback
+        message_id = str(ObjectId())
+        created_at = timezone.now().isoformat()
         
-        if message:
-            # Gửi tin nhắn đến tất cả users trong room
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'chat_message',
-                    'message_id': message['id'],
-                    'content': message['content'],
-                    'sender_id': message['sender_id'],
-                    'sender_name': message['sender_name'],
-                    'created_at': message['created_at'],
-                }
-            )
+        # Update thread metadata in SQL (keep this fast)
+        await self.update_thread_metadata()
+        
+        # Offload Storage to background worker
+        persist_chat_message_task.delay(
+            thread_id=self.thread_id,
+            sender_id=self.user.id,
+            sender_name=self.user.full_name,
+            sender_avatar=getattr(self.user, 'avatar_url', None),
+            content=content,
+            message_id=message_id
+        )
+        
+        # Gửi tin nhắn đến tất cả users trong room ngay lập tức
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'chat_message',
+                'message_id': message_id,
+                'content': content,
+                'sender_id': self.user.id,
+                'sender_name': self.user.full_name,
+                'created_at': created_at,
+            }
+        )
     
     async def handle_typing(self, data):
         """Xử lý thông báo đang gõ."""
@@ -195,24 +210,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         ).exists()
     
     @database_sync_to_async
-    def save_message(self, content):
+    def update_thread_metadata(self):
+        """Cập nhật thời gian update của thread trong DB chính."""
         try:
             thread = MessageThread.objects.get(id=self.thread_id)
-            
-            message_doc = MongoChatService.save_message(
-                thread_id=self.thread_id,
-                sender_id=self.user.id,
-                sender_name=self.user.full_name,
-                sender_avatar=getattr(self.user, 'avatar_url', None),
-                content=content
-            )
-            
-            # Update thread updated_at
-            thread.save()
-            
-            return message_doc
+            thread.save() # Triggers auto_now update
+            return True
         except MessageThread.DoesNotExist:
-            return None
+            return False
     
     @database_sync_to_async
     def mark_thread_as_read(self):

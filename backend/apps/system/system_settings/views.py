@@ -59,7 +59,7 @@ class SystemSettingViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         
         try:
-            #TODO: Cần Kiểm tra lại 
+            # Validation and Audit Logging handled by update_setting service
             updated_setting = update_setting(
                 user=request.user,
                 setting=instance,

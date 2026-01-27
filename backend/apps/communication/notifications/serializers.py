@@ -55,10 +55,22 @@ class NotificationCreateSerializer(serializers.Serializer):
 
 
 class NotificationMarkReadSerializer(serializers.Serializer):
-    """Serializer cho đánh dấu đã đọc."""
+    """Serializer cho đánh dấu đã đọc (Bulk)."""
     
-    #TODO: Cần hoàn thành serializer này -> đánh dấu thông báo đã đọc
-    pass  # No additional fields needed
+    notification_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        help_text="List of notification IDs to mark as read"
+    )
+    read_all = serializers.BooleanField(
+        default=False,
+        help_text="Set to true to mark all notifications as read"
+    )
+
+    def validate(self, data):
+        if not data.get('read_all') and not data.get('notification_ids'):
+            raise serializers.ValidationError("Either 'notification_ids' or 'read_all' must be provided.")
+        return data
 
 
 class NotificationSettingSerializer(serializers.Serializer):

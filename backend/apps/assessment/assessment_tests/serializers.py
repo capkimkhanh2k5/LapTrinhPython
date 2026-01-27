@@ -6,8 +6,7 @@ from apps.assessment.assessment_categories.models import AssessmentCategory
 
 class StartTestRequestSerializer(serializers.Serializer):
     """Request serializer for starting a test."""
-    #TODO: Cần xem lại logic này, có thể cần thêm thông tin như số lần retake, thời gian retake, ...
-
+    
     pass  # No body required, just auth token
 
 
@@ -187,6 +186,7 @@ class StartTestResponseSerializer(serializers.Serializer):
     total_questions = serializers.IntegerField()
     questions = serializers.ListField()
     started_at = serializers.DateTimeField()
+    attempt_number = serializers.IntegerField()
 
 
 class SubmitTestResponseSerializer(serializers.Serializer):

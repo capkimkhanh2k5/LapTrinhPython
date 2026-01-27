@@ -8,6 +8,7 @@ from django.db.models import Avg, Count
 from django.utils import timezone
 from django.conf import settings
 from apps.email.services import EmailService
+from apps.company.companies.services.suggestions import CompanySuggestionService
 
 from .models import Company
 from .serializers import (
@@ -355,17 +356,14 @@ class CompanyViewSet(viewsets.GenericViewSet):
     def company_suggestions(self, request):
         """
         GET /api/companies/suggestions - Lấy danh sách công ty gợi ý
-        """
-        user = request.user
-        if not user.is_authenticated:
-            companies = Company.objects.filter(verification_status='verified').order_by('-follower_count')[:10]
-            serializer = CompanySerializer(companies, many=True)
-            return Response(serializer.data)
         
-        # TODO: Implement personalized suggestions based on user preferences
-        # Tạm thời trả về top verified companies cho authenticated users
-        companies = Company.objects.filter(verification_status='verified').order_by('-follower_count')[:10]
+        Logic gợi ý:
+        1. Dựa trên kỹ năng của ứng viên (Recruiter Profile)
+        2. Nếu chưa đăng nhập hoặc không có profile, trả về Top Verified Companies
+        """
+        companies = CompanySuggestionService.get_suggestions(request.user)
         serializer = CompanySerializer(companies, many=True)
+        
         return Response(serializer.data)
         
     @action(detail=True, methods=['post'], url_path='claim')

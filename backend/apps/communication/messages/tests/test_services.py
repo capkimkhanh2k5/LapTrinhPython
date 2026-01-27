@@ -1,11 +1,10 @@
 # Messages Services Tests
 
-import pytest
+from unittest.mock import patch, MagicMock
+from django.test import TestCase
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 
 from apps.communication.message_threads.models import MessageThread
-from apps.communication.messages.models import Message
 from apps.communication.message_participants.models import MessageParticipant
 from apps.communication.messages.services.messages import (
     create_thread,
@@ -22,354 +21,292 @@ from apps.communication.messages.services.messages import (
 User = get_user_model()
 
 
-@pytest.fixture
-def user(db):
-    """Create a test user."""
-    return User.objects.create_user(
-        email='testuser@example.com',
-        password='testpass123',
-        full_name='Test User'
-    )
-
-
-@pytest.fixture
-def other_user(db):
-    """Create another test user."""
-    return User.objects.create_user(
-        email='otheruser@example.com',
-        password='testpass123',
-        full_name='Other User'
-    )
-
-
-@pytest.fixture
-def third_user(db):
-    """Create a third test user."""
-    return User.objects.create_user(
-        email='thirduser@example.com',
-        password='testpass123',
-        full_name='Third User'
-    )
-
-
-@pytest.fixture
-def message_thread(db, user, other_user):
-    """Create a message thread with participants."""
-    thread = MessageThread.objects.create(
-        subject='Test Thread'
-    )
-    MessageParticipant.objects.create(thread=thread, user=user)
-    MessageParticipant.objects.create(thread=thread, user=other_user)
-    return thread
-
-
-@pytest.fixture
-def message_in_thread(db, message_thread, user):
-    """Create a message in the thread."""
-    return Message.objects.create(
-        thread=message_thread,
-        sender=user,
-        content='Hello, this is a test message!'
-    )
-
-
-@pytest.mark.django_db
-class TestCreateThread:
-    """Tests for create_thread service."""
+class MessageServiceTests(TestCase):
     
-    def test_create_thread_success(self, user, other_user):
+    @classmethod
+    def setUpTestData(cls):
+        # Create users
+        cls.user = User.objects.create_user(
+            email='testuser@example.com',
+            password='testpass123',
+            full_name='Test User'
+        )
+        cls.other_user = User.objects.create_user(
+            email='otheruser@example.com',
+            password='testpass123',
+            full_name='Other User'
+        )
+        cls.third_user = User.objects.create_user(
+            email='thirduser@example.com',
+            password='testpass123',
+            full_name='Third User'
+        )
+        
+        # Create a thread
+        cls.message_thread = MessageThread.objects.create(subject='Test Thread')
+        MessageParticipant.objects.create(thread=cls.message_thread, user=cls.user)
+        MessageParticipant.objects.create(thread=cls.message_thread, user=cls.other_user)
+
+    @patch('apps.communication.messages.services.messages.MongoChatService')
+    def test_create_thread_success(self, mock_mongo):
         """Test creating a thread with participants."""
+        mock_mongo.save_message.return_value = {
+            'id': 'mongo_id_123',
+            'content': 'Hello!',
+            'created_at': '2023-01-01T00:00:00'
+        }
+        
         data = ThreadCreateInput(
-            participant_ids=[other_user.id],
+            participant_ids=[self.other_user.id],
             subject='New Thread',
             initial_message='Hello!'
         )
         
-        thread = create_thread(user, data)
+        thread = create_thread(self.user, data)
         
-        assert thread.id is not None
-        assert thread.subject == 'New Thread'
+        self.assertIsNotNone(thread.id)
+        self.assertEqual(thread.subject, 'New Thread')
         
         # Check participants
         participants = thread.participants.all()
-        assert participants.count() == 2
+        self.assertEqual(participants.count(), 2)
         
         participant_user_ids = [p.user_id for p in participants]
-        assert user.id in participant_user_ids
-        assert other_user.id in participant_user_ids
+        self.assertIn(self.user.id, participant_user_ids)
+        self.assertIn(self.other_user.id, participant_user_ids)
         
-        # Check initial message
-        assert thread.messages.count() == 1
-        assert thread.messages.first().content == 'Hello!'
-    
-    def test_create_thread_without_initial_message(self, user, other_user):
+        # Initial message call check
+        mock_mongo.save_message.assert_called_once()
+
+    def test_create_thread_without_initial_message(self):
         """Test creating thread without initial message."""
         data = ThreadCreateInput(
-            participant_ids=[other_user.id],
+            participant_ids=[self.other_user.id],
             subject='Empty Thread'
         )
         
-        thread = create_thread(user, data)
+        thread = create_thread(self.user, data)
         
-        assert thread.id is not None
-        assert thread.messages.count() == 0
-    
-    def test_create_thread_creator_added(self, user, other_user):
+        self.assertIsNotNone(thread.id)
+        # No initial message, so no call to DB/Mongo for messages expected here
+
+    def test_create_thread_creator_added(self):
         """Test creator is automatically added to participants."""
         data = ThreadCreateInput(
-            participant_ids=[other_user.id]  # Only other_user
+            participant_ids=[self.other_user.id]
         )
         
-        thread = create_thread(user, data)
+        thread = create_thread(self.user, data)
         
         # Creator should be added automatically
-        assert MessageParticipant.objects.filter(
-            thread=thread, user=user
-        ).exists()
-    
-    def test_create_thread_invalid_participant(self, user):
+        self.assertTrue(MessageParticipant.objects.filter(
+            thread=thread, user=self.user
+        ).exists())
+
+    def test_create_thread_invalid_participant(self):
         """Test creating thread with invalid participant."""
         data = ThreadCreateInput(
             participant_ids=[99999]
         )
         
-        with pytest.raises(ValueError, match="do not exist"):
-            create_thread(user, data)
+        with self.assertRaisesRegex(ValueError, "do not exist"):
+            create_thread(self.user, data)
 
-
-@pytest.mark.django_db
-class TestDeleteThread:
-    """Tests for delete_thread service (soft delete)."""
-    
-    def test_delete_thread_success(self, message_thread, user):
+    def test_delete_thread_success(self):
         """Test soft deleting/leaving a thread."""
-        result = delete_thread(message_thread.id, user.id)
+        thread = MessageThread.objects.create(subject='To Delete')
+        MessageParticipant.objects.create(thread=thread, user=self.user)
+        MessageParticipant.objects.create(thread=thread, user=self.other_user)
+
+        result = delete_thread(thread.id, self.user.id)
         
-        assert result is True
+        self.assertTrue(result)
         
         # Check user is inactive in thread
-        participant = MessageParticipant.objects.get(
-            thread=message_thread, user=user
-        )
-        assert participant.is_active is False
+        participant = MessageParticipant.objects.get(thread=thread, user=self.user)
+        self.assertFalse(participant.is_active)
         
         # Thread and other participant still exist
-        assert MessageThread.objects.filter(id=message_thread.id).exists()
-        other_participant = MessageParticipant.objects.get(
-            thread=message_thread,
-            is_active=True
-        )
-        assert other_participant is not None
-    
-    def test_delete_thread_not_participant(self, message_thread, third_user):
+        self.assertTrue(MessageThread.objects.filter(id=thread.id).exists())
+        other_participant = MessageParticipant.objects.get(thread=thread, user=self.other_user)
+        self.assertTrue(other_participant.is_active)
+
+    def test_delete_thread_not_participant(self):
         """Test cannot delete thread not participating in."""
-        with pytest.raises(ValueError, match="not a participant"):
-            delete_thread(message_thread.id, third_user.id)
+        with self.assertRaisesRegex(ValueError, "not a participant"):
+            delete_thread(self.message_thread.id, self.third_user.id)
 
-
-@pytest.mark.django_db
-class TestSendMessage:
-    """Tests for send_message service."""
-    
-    def test_send_message_success(self, message_thread, user):
+    @patch('apps.communication.messages.services.messages.MongoChatService')
+    def test_send_message_success(self, mock_mongo):
         """Test sending a message."""
+        mock_mongo.save_message.return_value = {
+            'id': 'msg_123',
+            'content': 'Hello World!',
+            'sender_id': self.user.id,
+            'thread_id': self.message_thread.id,
+            'created_at': '2023-01-01'
+        }
+        
         data = MessageCreateInput(content='Hello World!')
+        message = send_message(self.message_thread.id, self.user, data)
         
-        message = send_message(message_thread.id, user, data)
-        
-        assert message.id is not None
-        assert message.content == 'Hello World!'
-        assert message.sender == user
-        assert message.thread == message_thread
-    
-    def test_send_message_with_attachment(self, message_thread, user):
+        self.assertIsNotNone(message['id'])
+        self.assertEqual(message['content'], 'Hello World!')
+        self.assertEqual(message['sender_id'], self.user.id)
+
+    @patch('apps.communication.messages.services.messages.MongoChatService')
+    def test_send_message_with_attachment(self, mock_mongo):
         """Test sending message with attachment URL."""
+        mock_mongo.save_message.return_value = {
+            'id': 'msg_attach',
+            'content': 'Check this out',
+            'attachments': 'https://example.com/file.pdf'
+        }
+
         data = MessageCreateInput(
             content='Check this out',
             attachment_url='https://example.com/file.pdf'
         )
         
-        message = send_message(message_thread.id, user, data)
+        message = send_message(self.message_thread.id, self.user, data)
         
-        assert message.attachment_url == 'https://example.com/file.pdf'
-    
-    def test_send_message_not_participant(self, message_thread, third_user):
+        self.assertEqual(message['attachments'], 'https://example.com/file.pdf')
+
+    def test_send_message_not_participant(self):
         """Test cannot send message if not participant."""
         data = MessageCreateInput(content='Unauthorized')
         
-        with pytest.raises(ValueError, match="not a participant"):
-            send_message(message_thread.id, third_user, data)
-    
-    def test_send_message_updates_thread(self, message_thread, user):
+        with self.assertRaisesRegex(ValueError, "not a participant"):
+            send_message(self.message_thread.id, self.third_user, data)
+
+    @patch('apps.communication.messages.services.messages.MongoChatService')
+    def test_send_message_updates_thread(self, mock_mongo):
         """Test sending message updates thread's updated_at."""
-        original_updated = message_thread.updated_at
+        mock_mongo.save_message.return_value = {'id': '1', 'content': 'New', 'created_at': 'now'}
+        
+        original_updated = self.message_thread.updated_at
         
         data = MessageCreateInput(content='New message')
-        send_message(message_thread.id, user, data)
+        send_message(self.message_thread.id, self.user, data)
         
-        message_thread.refresh_from_db()
-        assert message_thread.updated_at >= original_updated
+        self.message_thread.refresh_from_db()
+        self.assertGreaterEqual(self.message_thread.updated_at, original_updated)
 
-
-@pytest.mark.django_db
-class TestDeleteMessage:
-    """Tests for delete_message service."""
-    
-    def test_delete_message_success(self, message_in_thread, user):
+    @patch('apps.communication.messages.services.messages.MongoChatService')
+    def test_delete_message_success(self, mock_mongo):
         """Test deleting own message."""
-        message_id = message_in_thread.id
+        mock_mongo.delete_message.return_value = True
         
-        result = delete_message(message_id, user.id)
+        result = delete_message('msg_id_1', self.user.id)
         
-        assert result is True
-        assert not Message.objects.filter(id=message_id).exists()
-    
-    def test_delete_message_not_sender(self, message_in_thread, other_user):
-        """Test cannot delete other's message."""
-        with pytest.raises(ValueError, match="only delete your own"):
-            delete_message(message_in_thread.id, other_user.id)
-    
-    def test_delete_message_not_found(self, user):
+        self.assertTrue(result)
+        mock_mongo.delete_message.assert_called_with('msg_id_1', self.user.id)
+
+    @patch('apps.communication.messages.services.messages.MongoChatService')
+    def test_delete_message_not_found(self, mock_mongo):
         """Test deleting non-existent message."""
-        with pytest.raises(ValueError, match="not found"):
-            delete_message(99999, user.id)
+        mock_mongo.delete_message.return_value = False
+        
+        result = delete_message('99999', self.user.id)
+        self.assertFalse(result)
 
-
-@pytest.mark.django_db
-class TestMarkThreadAsRead:
-    """Tests for mark_thread_as_read service."""
-    
-    def test_mark_as_read_success(self, message_thread, user):
+    @patch('apps.communication.messages.services.messages.MongoChatService')
+    def test_mark_thread_as_read_success(self, mock_mongo):
         """Test marking thread as read."""
-        result = mark_thread_as_read(message_thread.id, user.id)
+        result = mark_thread_as_read(self.message_thread.id, self.user.id)
         
-        assert result is True
+        self.assertTrue(result)
         
-        participant = MessageParticipant.objects.get(
-            thread=message_thread, user=user
-        )
-        assert participant.last_read_at is not None
-    
-    def test_mark_as_read_not_participant(self, message_thread, third_user):
+        participant = MessageParticipant.objects.get(thread=self.message_thread, user=self.user)
+        self.assertIsNotNone(participant.last_read_at)
+        mock_mongo.mark_read.assert_called_with(self.user.id, self.message_thread.id)
+
+    def test_mark_thread_as_read_not_participant(self):
         """Test cannot mark thread not participating in."""
-        with pytest.raises(ValueError, match="not a participant"):
-            mark_thread_as_read(message_thread.id, third_user.id)
+        with self.assertRaisesRegex(ValueError, "not a participant"):
+            mark_thread_as_read(self.message_thread.id, self.third_user.id)
 
-
-@pytest.mark.django_db
-class TestAddParticipant:
-    """Tests for add_participant service."""
-    
-    def test_add_participant_success(self, message_thread, user, third_user):
+    @patch('apps.communication.messages.services.messages.MongoChatService')
+    def test_add_participant_success(self, mock_mongo):
         """Test adding a new participant."""
         participant = add_participant(
-            thread_id=message_thread.id,
-            user_id=third_user.id,
-            adder_id=user.id
+            thread_id=self.message_thread.id,
+            user_id=self.third_user.id,
+            adder_id=self.user.id
         )
         
-        assert participant is not None
-        assert participant.user == third_user
-        assert participant.is_active is True
+        self.assertIsNotNone(participant)
+        self.assertEqual(participant.user, self.third_user)
+        self.assertTrue(participant.is_active)
         
-        # System message should be created
-        system_messages = Message.objects.filter(
-            thread=message_thread,
-            is_system_message=True
-        )
-        assert system_messages.exists()
-    
-    def test_add_participant_already_exists(self, message_thread, user, other_user):
+        # System message call check
+        mock_mongo.save_message.assert_called()
+
+    def test_add_participant_already_exists(self):
         """Test adding participant already in thread."""
-        with pytest.raises(ValueError, match="already a participant"):
-            add_participant(message_thread.id, other_user.id, user.id)
-    
-    def test_add_participant_reactivate(
-        self, message_thread, user, other_user
-    ):
+        with self.assertRaisesRegex(ValueError, "already a participant"):
+            add_participant(self.message_thread.id, self.other_user.id, self.user.id)
+
+    def test_add_participant_reactivate(self):
         """Test re-adding inactive participant."""
         # First deactivate
-        participant = MessageParticipant.objects.get(
-            thread=message_thread, user=other_user
-        )
+        participant = MessageParticipant.objects.get(thread=self.message_thread, user=self.other_user)
         participant.is_active = False
         participant.save()
         
         # Re-add
         reactivated = add_participant(
-            message_thread.id, other_user.id, user.id
+            self.message_thread.id, self.other_user.id, self.user.id
         )
         
-        assert reactivated.is_active is True
-    
-    def test_add_participant_not_participant(
-        self, message_thread, third_user, other_user
-    ):
+        self.assertTrue(reactivated.is_active)
+
+    def test_add_participant_not_participant(self):
         """Test non-participant cannot add others."""
-        new_user = User.objects.create_user(
-            email='newuser@example.com',
-            password='testpass123',
-            full_name='New User'
-        )
+        new_user = User.objects.create_user(email='new@test.com', password='pw', full_name='New')
         
-        with pytest.raises(ValueError, match="not a participant"):
-            add_participant(message_thread.id, new_user.id, third_user.id)
-    
-    def test_add_participant_invalid_user(self, message_thread, user):
+        with self.assertRaisesRegex(ValueError, "not a participant"):
+            add_participant(self.message_thread.id, new_user.id, self.third_user.id)
+
+    def test_add_participant_invalid_user(self):
         """Test adding non-existent user."""
-        with pytest.raises(ValueError, match="does not exist"):
-            add_participant(message_thread.id, 99999, user.id)
+        with self.assertRaisesRegex(ValueError, "does not exist"):
+            add_participant(self.message_thread.id, 99999, self.user.id)
 
-
-@pytest.mark.django_db
-class TestRemoveParticipant:
-    """Tests for remove_participant service."""
-    
-    def test_remove_participant_success(self, message_thread, user, other_user):
+    @patch('apps.communication.messages.services.messages.MongoChatService')
+    def test_remove_participant_success(self, mock_mongo):
         """Test removing a participant."""
         result = remove_participant(
-            thread_id=message_thread.id,
-            user_id=other_user.id,
-            remover_id=user.id
+            thread_id=self.message_thread.id,
+            user_id=self.other_user.id,
+            remover_id=self.user.id
         )
         
-        assert result is True
+        self.assertTrue(result)
         
-        participant = MessageParticipant.objects.get(
-            thread=message_thread, user=other_user
-        )
-        assert participant.is_active is False
+        participant = MessageParticipant.objects.get(thread=self.message_thread, user=self.other_user)
+        self.assertFalse(participant.is_active)
         
-        # System message should be created
-        system_messages = Message.objects.filter(
-            thread=message_thread,
-            is_system_message=True
-        )
-        assert system_messages.exists()
-    
-    def test_remove_self(self, message_thread, user):
+        # System message call check
+        mock_mongo.save_message.assert_called()
+
+    @patch('apps.communication.messages.services.messages.MongoChatService')
+    def test_remove_self(self, mock_mongo):
         """Test user can remove themselves."""
         result = remove_participant(
-            message_thread.id, user.id, user.id
+            self.message_thread.id, self.user.id, self.user.id
         )
         
-        assert result is True
-        
-        # Check system message says "left"
-        system_message = Message.objects.filter(
-            thread=message_thread,
-            is_system_message=True
-        ).first()
-        assert "left" in system_message.content
-    
-    def test_remove_participant_not_participant(
-        self, message_thread, third_user, other_user
-    ):
+        self.assertTrue(result)
+        # System message check
+        mock_mongo.save_message.assert_called()
+
+    def test_remove_participant_not_participant(self):
         """Test non-participant cannot remove others."""
-        with pytest.raises(ValueError, match="not a participant"):
-            remove_participant(message_thread.id, other_user.id, third_user.id)
-    
-    def test_remove_nonexistent_participant(self, message_thread, user, third_user):
+        with self.assertRaisesRegex(ValueError, "not a participant"):
+            remove_participant(self.message_thread.id, self.other_user.id, self.third_user.id)
+
+    def test_remove_nonexistent_participant(self):
         """Test removing someone not in thread."""
-        with pytest.raises(ValueError, match="not a participant"):
-            remove_participant(message_thread.id, third_user.id, user.id)
+        with self.assertRaisesRegex(ValueError, "not a participant"):
+            remove_participant(self.message_thread.id, self.third_user.id, self.user.id)

@@ -174,15 +174,28 @@ def send_message(
                 f'chat_{thread_id}',
                 {
                     'type': 'chat_message',
-                    'message_id': message.id,
-                    'content': message.content,
+                    'message_id': message['id'],
+                    'content': message['content'],
                     'sender_id': sender.id,
                     'sender_name': sender.full_name,
-                    'created_at': message.created_at.isoformat(),
+                    'created_at': message['created_at'], # Already ISO format from MongoService
                 }
             )
     except Exception:
         # WebSocket notification failed, but message was saved
+        pass
+        
+    # Increment Unread Counters for OTHER participants
+    try:
+        recipient_ids = list(MessageParticipant.objects.filter(
+            thread_id=thread_id,
+            is_active=True
+        ).exclude(user_id=sender.id).values_list('user_id', flat=True))
+        
+        MongoChatService.increment_unread_counters(thread_id, recipient_ids)
+    except Exception as e:
+        # Don't fail the message send if counter update fails
+        # Log error here in real app
         pass
     
     return message
@@ -231,6 +244,12 @@ def mark_thread_as_read(thread_id: int, user_id: int) -> bool:
     
     participant.last_read_at = timezone.now()
     participant.save(update_fields=['last_read_at'])
+    
+    # Reset Unread Counter in MongoDB
+    try:
+        MongoChatService.mark_read(user_id, thread_id)
+    except Exception:
+        pass
     
     return True
 

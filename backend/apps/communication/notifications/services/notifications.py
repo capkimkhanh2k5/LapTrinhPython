@@ -93,14 +93,24 @@ def mark_as_read(notification_id: int, user_id: int) -> Notification:
 def mark_all_as_read(user_id: int) -> int:
     """
     Mark all notifications as read for a user.
-    
-    Args:
-        user_id: ID of the user
-    
-    Returns:
-        Number of notifications updated
     """
     updated_count = Notification.objects.filter(
+        user_id=user_id,
+        is_read=False
+    ).update(
+        is_read=True,
+        read_at=timezone.now()
+    )
+    
+    return updated_count
+
+
+def bulk_mark_as_read(notification_ids: list[int], user_id: int) -> int:
+    """
+    Mark multiple notifications as read for a user.
+    """
+    updated_count = Notification.objects.filter(
+        id__in=notification_ids,
         user_id=user_id,
         is_read=False
     ).update(

@@ -123,6 +123,28 @@ class CustomUser(AbstractUser):
         verbose_name='Mã bí mật 2FA'
     )
 
+    # Social Auth Fields (Zero-table approach)
+    class SocialProvider(models.TextChoices):
+        NONE = '', _('Không')
+        GOOGLE = 'google', _('Google')
+        FACEBOOK = 'facebook', _('Facebook')
+        LINKEDIN = 'linkedin', _('LinkedIn')
+
+    social_provider = models.CharField(
+        max_length=20,
+        choices=SocialProvider.choices,
+        default=SocialProvider.NONE,
+        blank=True,
+        verbose_name='Nhà cung cấp Social'
+    )
+    social_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        unique=True,
+        verbose_name='ID từ Social Provider'
+    )
+
     # Note: last_login is already provided by AbstractUser
     
     USERNAME_FIELD = 'email'

@@ -1,5 +1,7 @@
 from typing import Optional, Iterable
 from django.db.models import QuerySet
+from django.core.cache import cache
+
 from ..models import SystemSetting
 
 
@@ -22,9 +24,19 @@ def list_settings(filters: dict = None) -> QuerySet[SystemSetting]:
 
 def get_setting_by_key(key: str) -> Optional[SystemSetting]:
     """
-        Lấy setting theo key
+    Lấy setting theo key (có caching)
     """
+    cache_key = f"system_setting:{key}"
+    
+    # Try getting from cache
+    setting_data = cache.get(cache_key)
+    if setting_data:
+        return setting_data
+
     try:
-        return SystemSetting.objects.get(setting_key=key)
+        setting = SystemSetting.objects.get(setting_key=key)
+        # Cache for 24 hours
+        cache.set(cache_key, setting, timeout=86400)
+        return setting
     except SystemSetting.DoesNotExist:
         return None

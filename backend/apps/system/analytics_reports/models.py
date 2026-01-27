@@ -44,6 +44,7 @@ class AnalyticsReport(models.Model):
     
     class Meta:
         db_table = 'analytics_reports'
+        app_label = 'system_analytics_reports'
         verbose_name = 'Báo cáo thống kê'
         verbose_name_plural = 'Báo cáo thống kê'
         indexes = [

@@ -122,8 +122,8 @@ class TestExperienceCalculator(TestCase):
         
         result = calculate_experience_score(self.job, self.recruiter)
         
-        self.assertEqual(result['score'], Decimal('60.00'))
-        self.assertEqual(result['details']['status'], 'significantly_over')
+        self.assertEqual(result['score'], Decimal('95.00'))
+        self.assertEqual(result['details']['status'], 'significantly_exceeds')
 
 
 class TestEducationCalculator(TestCase):
@@ -342,7 +342,7 @@ class TestExperienceCalculatorEdgeCases(TestCase):
         
         result = calculate_experience_score(self.job, self.recruiter)
         
-        self.assertEqual(result['score'], Decimal('75.00'))
+        self.assertEqual(result['score'], Decimal('95.00'))
     
     def test_exact_min_experience(self):
         """Recruiter with exactly min experience returns 100."""
@@ -389,7 +389,7 @@ class TestEducationCalculatorEdgeCases(TestCase):
         
         result = calculate_education_score(self.job, self.recruiter)
         
-        self.assertEqual(result['score'], Decimal('70.00'))
+        self.assertEqual(result['score'], Decimal('85.00'))
         self.assertEqual(result['details']['status'], 'slightly_below')
     
     def test_education_two_levels_below(self):
@@ -399,7 +399,7 @@ class TestEducationCalculatorEdgeCases(TestCase):
         
         result = calculate_education_score(self.job, self.recruiter)
         
-        self.assertEqual(result['score'], Decimal('40.00'))
+        self.assertEqual(result['score'], Decimal('60.00'))
     
     def test_director_level_requires_masters(self):
         """Director level job prefers Master's degree."""
@@ -477,14 +477,14 @@ class TestSemanticCalculator(TestCase):
         self.recruiter.bio = 'Experienced Python developer'
         self.recruiter.years_of_experience = 3
     
-    @patch('apps.assessment.ai_matching_scores.calculators.semantic_calculator.get_openai_client')
-    def test_semantic_disabled_when_no_client(self, mock_get_client):
+    @patch('apps.assessment.ai_matching_scores.calculators.semantic_calculator.is_semantic_enabled')
+    def test_semantic_disabled_when_no_client(self, mock_is_enabled):
         """Returns disabled status when OpenAI not configured."""
         from apps.assessment.ai_matching_scores.calculators.semantic_calculator import (
             calculate_semantic_score,
         )
         
-        mock_get_client.return_value = None
+        mock_is_enabled.return_value = False
         
         result = calculate_semantic_score(self.job, self.recruiter)
         

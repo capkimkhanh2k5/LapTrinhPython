@@ -143,3 +143,135 @@ class TestMongoChatService(SimpleTestCase):
         # So it shouldn't reach find_one if I passed a truly invalid ID string.
         mock_collection.find_one.assert_not_called()
         mock_collection.delete_one.assert_not_called()
+
+
+@override_settings(MONGO_DB_NAME='test_chat_unit_db')
+class TestUnreadCounters(SimpleTestCase):
+    """Test cases for MongoDB Unread Counters feature."""
+    
+    @patch('apps.communication.messages.services.mongo_service.pymongo.MongoClient')
+    def test_increment_unread_counters(self, mock_client):
+        """Test that increment_unread_counters calls bulk_write correctly."""
+        # Setup Mock
+        mock_db = MagicMock()
+        mock_counters_col = MagicMock()
+        mock_client.return_value.__getitem__.return_value = mock_db
+        mock_db.__getitem__.return_value = mock_counters_col
+        
+        # Reset singleton
+        MongoChatService._client = None
+        MongoChatService._db = None
+        
+        # Execute
+        MongoChatService.increment_unread_counters(
+            thread_id=10,
+            recipient_ids=[1, 2, 3]
+        )
+        
+        # Verify bulk_write was called
+        mock_counters_col.bulk_write.assert_called_once()
+        
+        # Verify operations structure
+        call_args = mock_counters_col.bulk_write.call_args[0][0]
+        self.assertEqual(len(call_args), 3)  # 3 recipients = 3 operations
+
+    @patch('apps.communication.messages.services.mongo_service.pymongo.MongoClient')
+    def test_increment_unread_counters_empty_list(self, mock_client):
+        """Test that increment_unread_counters does nothing for empty list."""
+        # Setup Mock
+        mock_db = MagicMock()
+        mock_counters_col = MagicMock()
+        mock_client.return_value.__getitem__.return_value = mock_db
+        mock_db.__getitem__.return_value = mock_counters_col
+        
+        # Reset singleton
+        MongoChatService._client = None
+        MongoChatService._db = None
+        
+        # Execute with empty list
+        MongoChatService.increment_unread_counters(
+            thread_id=10,
+            recipient_ids=[]
+        )
+        
+        # bulk_write should NOT be called
+        mock_counters_col.bulk_write.assert_not_called()
+
+    @patch('apps.communication.messages.services.mongo_service.pymongo.MongoClient')
+    def test_mark_read_resets_count(self, mock_client):
+        """Test that mark_read resets count to 0."""
+        # Setup Mock
+        mock_db = MagicMock()
+        mock_counters_col = MagicMock()
+        mock_client.return_value.__getitem__.return_value = mock_db
+        mock_db.__getitem__.return_value = mock_counters_col
+        
+        # Reset singleton
+        MongoChatService._client = None
+        MongoChatService._db = None
+        
+        # Execute
+        MongoChatService.mark_read(user_id=5, thread_id=10)
+        
+        # Verify update_one was called with correct filter and update
+        mock_counters_col.update_one.assert_called_once()
+        call_args = mock_counters_col.update_one.call_args
+        
+        # Check filter
+        filter_arg = call_args[0][0]
+        self.assertEqual(filter_arg['user_id'], 5)
+        self.assertEqual(filter_arg['thread_id'], 10)
+        
+        # Check update
+        update_arg = call_args[0][1]
+        self.assertEqual(update_arg['$set']['count'], 0)
+
+    @patch('apps.communication.messages.services.mongo_service.pymongo.MongoClient')
+    def test_get_total_unread_count(self, mock_client):
+        """Test aggregation for total unread count."""
+        # Setup Mock
+        mock_db = MagicMock()
+        mock_counters_col = MagicMock()
+        mock_client.return_value.__getitem__.return_value = mock_db
+        mock_db.__getitem__.return_value = mock_counters_col
+        
+        # Mock aggregation result
+        mock_counters_col.aggregate.return_value = [{'_id': None, 'total': 15}]
+        
+        # Reset singleton
+        MongoChatService._client = None
+        MongoChatService._db = None
+        
+        # Execute
+        result = MongoChatService.get_total_unread_count(user_id=5)
+        
+        # Verify result
+        self.assertEqual(result, 15)
+        
+        # Verify aggregation pipeline
+        mock_counters_col.aggregate.assert_called_once()
+        pipeline = mock_counters_col.aggregate.call_args[0][0]
+        self.assertEqual(pipeline[0]['$match']['user_id'], 5)
+        self.assertEqual(pipeline[1]['$group']['_id'], None)
+
+    @patch('apps.communication.messages.services.mongo_service.pymongo.MongoClient')
+    def test_get_total_unread_count_no_data(self, mock_client):
+        """Test aggregation returns 0 when no data."""
+        # Setup Mock
+        mock_db = MagicMock()
+        mock_counters_col = MagicMock()
+        mock_client.return_value.__getitem__.return_value = mock_db
+        mock_db.__getitem__.return_value = mock_counters_col
+        
+        # Mock empty aggregation result
+        mock_counters_col.aggregate.return_value = []
+        
+        # Reset singleton
+        MongoChatService._client = None
+        MongoChatService._db = None
+        
+        # Execute
+        result = MongoChatService.get_total_unread_count(user_id=999)
+        
+        # Verify returns 0
+        self.assertEqual(result, 0)

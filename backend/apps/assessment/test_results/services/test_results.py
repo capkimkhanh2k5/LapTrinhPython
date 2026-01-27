@@ -16,7 +16,6 @@ from apps.assessment.assessment_tests.services.assessment_tests import (
     start_test,
     StartTestInput,
     check_retake_eligibility,
-    MAX_RETAKE_ATTEMPTS,
 )
 
 
@@ -123,7 +122,7 @@ def request_retake(result_id: int, recruiter_id: int) -> dict:
         return {
             'can_retake': False,
             'session': None,
-            'message': f'Maximum retake limit ({MAX_RETAKE_ATTEMPTS}) exceeded',
+            'message': eligibility.get('message', 'Không thể thi lại bài test này.'),
             'eligibility': eligibility,
         }
     

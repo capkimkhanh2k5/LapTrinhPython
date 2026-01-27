@@ -8,7 +8,7 @@ Test Coverage:
 - get_media_type_by_name
 """
 
-import pytest
+from django.test import TestCase
 from apps.company.media_types.models import MediaType
 from apps.company.media_types.selectors.media_types import (
     list_media_types,
@@ -17,108 +17,66 @@ from apps.company.media_types.selectors.media_types import (
 )
 
 
-@pytest.fixture
-def media_types(db):
-    """Create multiple media types"""
-    types = [
-        MediaType.objects.create(type_name='Image', description='Images', is_active=True),
-        MediaType.objects.create(type_name='Video', description='Videos', is_active=True),
-        MediaType.objects.create(type_name='Document', description='Docs', is_active=False),
-    ]
-    return types
+class TestMediaTypeSelectors(TestCase):
+    def setUp(self):
+        self.image = MediaType.objects.create(type_name='Image', description='Images', is_active=True)
+        self.video = MediaType.objects.create(type_name='Video', description='Videos', is_active=True)
+        self.doc = MediaType.objects.create(type_name='Document', description='Docs', is_active=False)
 
-
-# ============================================
-# LIST SELECTOR TESTS
-# ============================================
-
-@pytest.mark.django_db
-class TestListMediaTypes:
-    """Tests for list_media_types selector"""
-    
-    def test_list_all_media_types(self, media_types):
+    def test_list_all_media_types(self):
         """Should return all media types"""
         result = list_media_types()
-        
-        assert result.count() == 3
+        self.assertEqual(result.count(), 3)
     
-    def test_list_active_media_types(self, media_types):
+    def test_list_active_media_types(self):
         """Should filter by is_active=True"""
         result = list_media_types(is_active=True)
-        
-        assert result.count() == 2
+        self.assertEqual(result.count(), 2)
         for item in result:
-            assert item.is_active is True
+            self.assertTrue(item.is_active)
     
-    def test_list_inactive_media_types(self, media_types):
+    def test_list_inactive_media_types(self):
         """Should filter by is_active=False"""
         result = list_media_types(is_active=False)
-        
-        assert result.count() == 1
-        assert result.first().is_active is False
+        self.assertEqual(result.count(), 1)
+        self.assertFalse(result.first().is_active)
     
-    def test_list_media_types_ordered(self, media_types):
+    def test_list_media_types_ordered(self):
         """Should return ordered by type_name"""
         result = list_media_types()
         names = [item.type_name for item in result]
-        
-        assert names == sorted(names)
+        self.assertEqual(names, sorted(names))
     
-    def test_list_media_types_empty(self, db):
+    def test_list_media_types_empty(self):
         """Should return empty queryset when no types exist"""
+        MediaType.objects.all().delete()
         result = list_media_types()
-        
-        assert result.count() == 0
+        self.assertEqual(result.count(), 0)
 
-
-# ============================================
-# GET BY ID SELECTOR TESTS
-# ============================================
-
-@pytest.mark.django_db
-class TestGetMediaTypeById:
-    """Tests for get_media_type_by_id selector"""
-    
-    def test_get_media_type_by_id_success(self, media_types):
+    def test_get_media_type_by_id_success(self):
         """Should return media type by ID"""
-        target = media_types[0]
-        
-        result = get_media_type_by_id(target.id)
-        
-        assert result is not None
-        assert result.id == target.id
-        assert result.type_name == target.type_name
+        result = get_media_type_by_id(self.image.id)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.id, self.image.id)
+        self.assertEqual(result.type_name, self.image.type_name)
     
-    def test_get_media_type_by_id_not_found(self, db):
+    def test_get_media_type_by_id_not_found(self):
         """Should return None for non-existent ID"""
         result = get_media_type_by_id(99999)
-        
-        assert result is None
+        self.assertIsNone(result)
 
-
-# ============================================
-# GET BY NAME SELECTOR TESTS
-# ============================================
-
-@pytest.mark.django_db
-class TestGetMediaTypeByName:
-    """Tests for get_media_type_by_name selector"""
-    
-    def test_get_media_type_by_name_success(self, media_types):
+    def test_get_media_type_by_name_success(self):
         """Should return media type by name"""
         result = get_media_type_by_name('Image')
-        
-        assert result is not None
-        assert result.type_name == 'Image'
+        self.assertIsNotNone(result)
+        self.assertEqual(result.type_name, 'Image')
     
-    def test_get_media_type_by_name_not_found(self, db):
+    def test_get_media_type_by_name_not_found(self):
         """Should return None for non-existent name"""
         result = get_media_type_by_name('NonExistent')
-        
-        assert result is None
+        self.assertIsNone(result)
     
-    def test_get_media_type_by_name_case_sensitive(self, media_types):
+    def test_get_media_type_by_name_case_sensitive(self):
         """Should be case-sensitive"""
         result = get_media_type_by_name('image')  # lowercase
-        
-        assert result is None
+        self.assertIsNone(result)

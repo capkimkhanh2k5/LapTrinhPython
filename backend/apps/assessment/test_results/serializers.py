@@ -96,7 +96,7 @@ class CertificateSerializer(serializers.Serializer):
 
 class RetakeRequestSerializer(serializers.Serializer):
     """Request serializer for retaking a test."""
-    #TODO: Cần xem lại logic này, có thể cần thêm thông tin như số lần retake, thời gian retake, ...
+    # Logic implemented in services and response serializers
     
     pass  # No body required
 
@@ -106,6 +106,7 @@ class RetakeResponseSerializer(serializers.Serializer):
     can_retake = serializers.BooleanField()
     session = serializers.DictField(allow_null=True)
     message = serializers.CharField()
+    eligibility = serializers.DictField()
 
 
 class JobRequiredTestSerializer(serializers.Serializer):

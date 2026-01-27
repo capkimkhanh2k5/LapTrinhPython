@@ -1,29 +1,35 @@
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from django.conf import settings
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
 class GeminiService:
-    _configured = False
+    _client = None
 
     @classmethod
-    def _configure(cls):
-        if not cls._configured:
+    def _get_client(cls):
+        if not cls._client:
             if not settings.GEMINI_API_KEY:
                 logger.warning("GEMINI_API_KEY not configured.")
-                return False
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            cls._configured = True
-        return True
+                return None
+            try:
+                cls._client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            except Exception as e:
+                logger.error(f"Failed to initialize Gemini Client: {e}")
+                return None
+        return cls._client
 
     @classmethod
     def get_embedding(cls, text: str):
         """
-        Get embedding for text using 'models/embedding-001'.
+        Get embedding for text using 'text-embedding-004'.
         Returns list of floats or None.
         """
-        if not cls._configure():
+        client = cls._get_client()
+        if not client:
             return None
         
         try:
@@ -33,13 +39,15 @@ class GeminiService:
                 return None
                 
             # Embed content
-            result = genai.embed_content(
-                model="models/text-embedding-004",
-                content=text,
-                task_type="retrieval_document",
-                title="CV Embedding"
+            result = client.models.embed_content(
+                model="text-embedding-004",
+                contents=text,
+                config=types.EmbedContentConfig(
+                    task_type="RETRIEVAL_DOCUMENT",
+                    title="CV Embedding"
+                )
             )
-            return result['embedding']
+            return result.embeddings[0].values
         except Exception as e:
             logger.error(f"Gemini embedding error: {e}")
             return None
@@ -47,29 +55,49 @@ class GeminiService:
     @classmethod
     def generate_content(cls, prompt: str) -> str:
         """
-        Generate text content using 'gemini-1.5-flash'.
+        Generate text content using 'gemini-2.0-flash'.
         Returns string response or None.
         """
-        if not cls._configure():
+        client = cls._get_client()
+        if not client:
             return None
             
         try:
-            model = genai.GenerativeModel('models/gemini-2.0-flash')
-            response = model.generate_content(prompt)
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=prompt
+            )
             return response.text
         except Exception as e:
             logger.error(f"Gemini generation error: {e}")
             return None
 
     @classmethod
-    def generate_json(cls, prompt: str) -> str:
+    def generate_json(cls, prompt: str, schema: dict = None) -> dict:
         """
-        Generate JSON content. Ensures response is JSON formatted.
+        Generate JSON content. 
+        If schema is provided, uses structured output.
+        Returns dict or None.
         """
-        json_prompt = f"{prompt}\n\nIMPORTANT: Return ONLY valid JSON format. No markdown code blocks."
-        response = cls.generate_content(json_prompt)
-        if response:
-            # Clean up markdown if present
-            clean_response = response.replace('```json', '').replace('```', '').strip()
-            return clean_response
-        return None
+        client = cls._get_client()
+        if not client:
+            return None
+            
+        try:
+            config = types.GenerateContentConfig(
+                response_mime_type='application/json',
+                response_schema=schema if schema else None
+            )
+            
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=prompt,
+                config=config
+            )
+            
+            if response.text:
+                return json.loads(response.text)
+            return None
+        except Exception as e:
+            logger.error(f"Gemini JSON generation error: {e}")
+            return None

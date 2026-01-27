@@ -24,7 +24,7 @@ class JobAlertSerializer(serializers.ModelSerializer):
             'locations_detail', 'location_ids',
             'skills_detail', 'skill_ids',
             'job_type', 'level', 'salary_min',
-            'frequency', 'email_notification', 'is_active',
+            'frequency', 'email_notification', 'use_ai_matching', 'is_active',
             'last_sent_at', 'created_at', 'updated_at'
         ]
         read_only_fields = ['last_sent_at', 'created_at', 'updated_at']

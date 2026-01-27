@@ -9,10 +9,9 @@ Test Coverage:
 - DELETE /api/media-types/:id/ (destroy)
 """
 
-import pytest
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APIClient
+from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 
 from apps.company.media_types.models import MediaType
@@ -20,283 +19,229 @@ from apps.company.media_types.models import MediaType
 User = get_user_model()
 
 
-@pytest.fixture
-def api_client():
-    return APIClient()
+class MediaTypeViewSetTests(APITestCase):
+    def setUp(self):
+        # Create users
+        self.admin_user = User.objects.create_user(
+            email='admin@test.com',
+            password='adminpass123',
+            first_name='Admin',
+            last_name='User',
+            is_staff=True,
+            is_superuser=True
+        )
+        self.normal_user = User.objects.create_user(
+            email='user@test.com',
+            password='userpass123',
+            first_name='Normal',
+            last_name='User'
+        )
+        
+        # Create media types
+        self.image = MediaType.objects.create(type_name='Image', description='Image files', is_active=True)
+        self.video = MediaType.objects.create(type_name='Video', description='Video files', is_active=True)
+        self.doc = MediaType.objects.create(type_name='Document', description='Document files', is_active=False)
+        
+        self.list_url = reverse('media-types-list')
+        self.detail_url = lambda pk: reverse('media-types-detail', kwargs={'pk': pk})
 
-
-@pytest.fixture
-def admin_user(db):
-    """Create admin user"""
-    user = User.objects.create_user(
-        email='admin@test.com',
-        password='adminpass123',
-        is_staff=True,
-        is_superuser=True
-    )
-    return user
-
-
-@pytest.fixture
-def normal_user(db):
-    """Create normal user"""
-    user = User.objects.create_user(
-        email='user@test.com',
-        password='userpass123'
-    )
-    return user
-
-
-@pytest.fixture
-def media_type(db):
-    """Create sample media type"""
-    return MediaType.objects.create(
-        type_name='Image',
-        description='Image files (jpg, png, gif)',
-        is_active=True
-    )
-
-
-@pytest.fixture
-def media_types(db):
-    """Create multiple media types"""
-    types = [
-        MediaType.objects.create(type_name='Image', description='Image files', is_active=True),
-        MediaType.objects.create(type_name='Video', description='Video files', is_active=True),
-        MediaType.objects.create(type_name='Document', description='Document files', is_active=False),
-    ]
-    return types
-
-
-# ============================================
-# LIST TESTS - GET /api/media-types/
-# ============================================
-
-@pytest.mark.django_db
-class TestMediaTypeList:
-    """Tests for listing media types"""
+    # ============================================
+    # LIST TESTS - GET /api/media-types/
+    # ============================================
     
-    def test_list_media_types_public_access(self, api_client, media_types):
+    def test_list_media_types_public_access(self):
         """List endpoint should be public (no auth required)"""
-        url = reverse('media-types-list')
-        response = api_client.get(url)
+        response = self.client.get(self.list_url)
         
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 3
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
     
-    def test_list_media_types_filter_active(self, api_client, media_types):
+    def test_list_media_types_filter_active(self):
         """Should filter by is_active"""
-        url = reverse('media-types-list')
-        response = api_client.get(url, {'is_active': 'true'})
+        response = self.client.get(self.list_url, {'is_active': 'true'})
         
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 2
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
         for item in response.data:
-            assert item['is_active'] is True
+            self.assertTrue(item['is_active'])
     
-    def test_list_media_types_filter_inactive(self, api_client, media_types):
+    def test_list_media_types_filter_inactive(self):
         """Should filter inactive media types"""
-        url = reverse('media-types-list')
-        response = api_client.get(url, {'is_active': 'false'})
+        response = self.client.get(self.list_url, {'is_active': 'false'})
         
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert response.data[0]['is_active'] is False
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertFalse(response.data[0]['is_active'])
     
-    def test_list_media_types_returns_expected_fields(self, api_client, media_type):
+    def test_list_media_types_returns_expected_fields(self):
         """Response should contain all expected fields"""
-        url = reverse('media-types-list')
-        response = api_client.get(url)
+        response = self.client.get(self.list_url)
         
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = response.data[0]
-        assert 'id' in item
-        assert 'type_name' in item
-        assert 'description' in item
-        assert 'is_active' in item
-        assert 'created_at' in item
+        self.assertIn('id', item)
+        self.assertIn('type_name', item)
+        self.assertIn('description', item)
+        self.assertIn('is_active', item)
+        self.assertIn('created_at', item)
 
-
-# ============================================
-# CREATE TESTS - POST /api/media-types/
-# ============================================
-
-@pytest.mark.django_db
-class TestMediaTypeCreate:
-    """Tests for creating media types"""
+    # ============================================
+    # CREATE TESTS - POST /api/media-types/
+    # ============================================
     
-    def test_create_media_type_admin_success(self, api_client, admin_user):
+    def test_create_media_type_admin_success(self):
         """Admin should be able to create media type"""
-        api_client.force_authenticate(user=admin_user)
-        url = reverse('media-types-list')
+        self.client.force_authenticate(user=self.admin_user)
         data = {
             'type_name': 'Audio',
             'description': 'Audio files (mp3, wav)',
             'is_active': True
         }
         
-        response = api_client.post(url, data, format='json')
+        response = self.client.post(self.list_url, data, format='json')
         
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data['type_name'] == 'Audio'
-        assert response.data['description'] == 'Audio files (mp3, wav)'
-        assert response.data['is_active'] is True
-        assert MediaType.objects.filter(type_name='Audio').exists()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['type_name'], 'Audio')
+        self.assertEqual(response.data['description'], 'Audio files (mp3, wav)')
+        self.assertTrue(response.data['is_active'])
+        self.assertTrue(MediaType.objects.filter(type_name='Audio').exists())
     
-    def test_create_media_type_unauthenticated_fails(self, api_client):
+    def test_create_media_type_unauthenticated_fails(self):
         """Unauthenticated user should not create"""
-        url = reverse('media-types-list')
         data = {'type_name': 'Audio', 'description': 'Audio files'}
         
-        response = api_client.post(url, data, format='json')
+        response = self.client.post(self.list_url, data, format='json')
         
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
-    def test_create_media_type_normal_user_fails(self, api_client, normal_user):
+    def test_create_media_type_normal_user_fails(self):
         """Normal user (non-admin) should not create"""
-        api_client.force_authenticate(user=normal_user)
-        url = reverse('media-types-list')
+        self.client.force_authenticate(user=self.normal_user)
         data = {'type_name': 'Audio', 'description': 'Audio files'}
         
-        response = api_client.post(url, data, format='json')
+        response = self.client.post(self.list_url, data, format='json')
         
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
-    def test_create_media_type_duplicate_name_fails(self, api_client, admin_user, media_type):
+    def test_create_media_type_duplicate_name_fails(self):
         """Should reject duplicate type_name"""
-        api_client.force_authenticate(user=admin_user)
-        url = reverse('media-types-list')
+        self.client.force_authenticate(user=self.admin_user)
         data = {'type_name': 'Image', 'description': 'Another image type'}
         
-        response = api_client.post(url, data, format='json')
+        response = self.client.post(self.list_url, data, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'already exists' in str(response.data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('already exists', str(response.data))
     
-    def test_create_media_type_missing_name_fails(self, api_client, admin_user):
+    def test_create_media_type_missing_name_fails(self):
         """Should require type_name field"""
-        api_client.force_authenticate(user=admin_user)
-        url = reverse('media-types-list')
+        self.client.force_authenticate(user=self.admin_user)
         data = {'description': 'Some description'}
         
-        response = api_client.post(url, data, format='json')
+        response = self.client.post(self.list_url, data, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
-# ============================================
-# UPDATE TESTS - PUT /api/media-types/:id/
-# ============================================
-
-@pytest.mark.django_db
-class TestMediaTypeUpdate:
-    """Tests for updating media types"""
+    # ============================================
+    # UPDATE TESTS - PUT /api/media-types/:id/
+    # ============================================
     
-    def test_update_media_type_admin_success(self, api_client, admin_user, media_type):
+    def test_update_media_type_admin_success(self):
         """Admin should be able to update media type"""
-        api_client.force_authenticate(user=admin_user)
-        url = reverse('media-types-detail', kwargs={'pk': media_type.id})
+        self.client.force_authenticate(user=self.admin_user)
+        url = self.detail_url(self.image.id)
         data = {
             'type_name': 'Updated Image',
             'description': 'Updated description',
             'is_active': False
         }
         
-        response = api_client.put(url, data, format='json')
+        response = self.client.put(url, data, format='json')
         
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['type_name'] == 'Updated Image'
-        assert response.data['description'] == 'Updated description'
-        assert response.data['is_active'] is False
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['type_name'], 'Updated Image')
+        self.assertEqual(response.data['description'], 'Updated description')
+        self.assertFalse(response.data['is_active'])
     
-    def test_update_media_type_partial(self, api_client, admin_user, media_type):
+    def test_update_media_type_partial(self):
         """Should allow partial updates"""
-        api_client.force_authenticate(user=admin_user)
-        url = reverse('media-types-detail', kwargs={'pk': media_type.id})
+        self.client.force_authenticate(user=self.admin_user)
+        url = self.detail_url(self.image.id)
         data = {'description': 'Only description updated'}
         
-        response = api_client.put(url, data, format='json')
+        response = self.client.patch(url, data, format='json')
         
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['description'] == 'Only description updated'
-        assert response.data['type_name'] == media_type.type_name  # unchanged
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['description'], 'Only description updated')
+        self.assertEqual(response.data['type_name'], self.image.type_name)
     
-    def test_update_media_type_normal_user_fails(self, api_client, normal_user, media_type):
+    def test_update_media_type_normal_user_fails(self):
         """Normal user should not update"""
-        api_client.force_authenticate(user=normal_user)
-        url = reverse('media-types-detail', kwargs={'pk': media_type.id})
+        self.client.force_authenticate(user=self.normal_user)
+        url = self.detail_url(self.image.id)
         data = {'type_name': 'Hacked'}
         
-        response = api_client.put(url, data, format='json')
+        response = self.client.put(url, data, format='json')
         
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
-    def test_update_media_type_not_found(self, api_client, admin_user):
+    def test_update_media_type_not_found(self):
         """Should return 404 for non-existent ID"""
-        api_client.force_authenticate(user=admin_user)
-        url = reverse('media-types-detail', kwargs={'pk': 99999})
+        self.client.force_authenticate(user=self.admin_user)
+        url = self.detail_url(99999)
         data = {'type_name': 'Test'}
         
-        response = api_client.put(url, data, format='json')
+        response = self.client.put(url, data, format='json')
         
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
-    def test_update_media_type_duplicate_name_fails(self, api_client, admin_user, media_types):
+    def test_update_media_type_duplicate_name_fails(self):
         """Should reject duplicate type_name on update"""
-        api_client.force_authenticate(user=admin_user)
-        first_type = media_types[0]
-        second_type = media_types[1]
+        self.client.force_authenticate(user=self.admin_user)
+        url = self.detail_url(self.video.id)
+        data = {'type_name': self.image.type_name}  # Try to use 'Image' which belongs to another object
         
-        url = reverse('media-types-detail', kwargs={'pk': second_type.id})
-        data = {'type_name': first_type.type_name}  # Try to use existing name
+        response = self.client.put(url, data, format='json')
         
-        response = api_client.put(url, data, format='json')
-        
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
-# ============================================
-# DELETE TESTS - DELETE /api/media-types/:id/
-# ============================================
-
-@pytest.mark.django_db
-class TestMediaTypeDelete:
-    """Tests for deleting media types"""
+    # ============================================
+    # DELETE TESTS - DELETE /api/media-types/:id/
+    # ============================================
     
-    def test_delete_media_type_admin_success(self, api_client, admin_user, media_type):
+    def test_delete_media_type_admin_success(self):
         """Admin should be able to delete media type"""
-        api_client.force_authenticate(user=admin_user)
-        url = reverse('media-types-detail', kwargs={'pk': media_type.id})
+        self.client.force_authenticate(user=self.admin_user)
+        url = self.detail_url(self.image.id)
         
-        response = api_client.delete(url)
+        response = self.client.delete(url)
         
-        assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not MediaType.objects.filter(id=media_type.id).exists()
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(MediaType.objects.filter(id=self.image.id).exists())
     
-    def test_delete_media_type_normal_user_fails(self, api_client, normal_user, media_type):
+    def test_delete_media_type_normal_user_fails(self):
         """Normal user should not delete"""
-        api_client.force_authenticate(user=normal_user)
-        url = reverse('media-types-detail', kwargs={'pk': media_type.id})
+        self.client.force_authenticate(user=self.normal_user)
+        url = self.detail_url(self.image.id)
         
-        response = api_client.delete(url)
+        response = self.client.delete(url)
         
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert MediaType.objects.filter(id=media_type.id).exists()
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(MediaType.objects.filter(id=self.image.id).exists())
     
-    def test_delete_media_type_unauthenticated_fails(self, api_client, media_type):
+    def test_delete_media_type_unauthenticated_fails(self):
         """Unauthenticated user should not delete"""
-        url = reverse('media-types-detail', kwargs={'pk': media_type.id})
+        url = self.detail_url(self.image.id)
         
-        response = api_client.delete(url)
+        response = self.client.delete(url)
         
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
-    def test_delete_media_type_not_found(self, api_client, admin_user):
+    def test_delete_media_type_not_found(self):
         """Should return 404 for non-existent ID"""
-        api_client.force_authenticate(user=admin_user)
-        url = reverse('media-types-detail', kwargs={'pk': 99999})
+        self.client.force_authenticate(user=self.admin_user)
+        url = self.detail_url(99999)
         
-        response = api_client.delete(url)
+        response = self.client.delete(url)
         
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

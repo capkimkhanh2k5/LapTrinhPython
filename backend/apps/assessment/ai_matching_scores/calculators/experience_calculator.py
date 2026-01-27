@@ -73,18 +73,17 @@ def calculate_experience_score(job: Job, recruiter: Recruiter) -> dict:
                     score = Decimal('20.00')
                 status = 'significantly_under'
         else:
-            # Over-qualified
+            # Over-qualified (has more experience than max)
+            # UPDATED: More experience is generally positive!
+            # Give high score since they exceed requirements
             overage = recruiter_exp - max_exp
-            if overage <= 2:
-                score = Decimal('90.00')
-                status = 'slightly_over'
-            elif overage <= 5:
-                score = Decimal('75.00')
-                status = 'over_qualified'
+            if overage <= 3:
+                score = Decimal('100.00')
+                status = 'exceeds_requirement'
             else:
-                # May not be interested in the role
-                score = Decimal('60.00')
-                status = 'significantly_over'
+                # Very senior for the role, still excellent
+                score = Decimal('95.00')
+                status = 'significantly_exceeds'
     
     # Round to 2 decimal places
     score = score.quantize(Decimal('0.01'))

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from apps.recruitment.campaigns.models import Campaign
 from apps.recruitment.jobs.serializers import JobListSerializer as JobSerializer  # Alias for consistency
+from apps.recruitment.jobs.validators import JobOwnershipValidator
 
 class CampaignSerializer(serializers.ModelSerializer):
     job_count = serializers.IntegerField(source='jobs.count', read_only=True)
@@ -23,13 +24,9 @@ class CampaignDetailSerializer(CampaignSerializer):
 class CampaignJobAddSerializer(serializers.Serializer):
     job_ids = serializers.ListField(
         child=serializers.IntegerField(),
-        allow_empty=False
+        allow_empty=False,
+        validators=[JobOwnershipValidator()]
     )
-    
-    def validate_job_ids(self, value):
-        # Basic type check only, existence check in service
-        #TODO: Cần kiểm tra lại logic này
-        return value
 
 class CampaignStatusUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=Campaign.Status.choices)

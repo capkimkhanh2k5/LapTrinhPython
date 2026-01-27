@@ -16,22 +16,35 @@ class DashboardViewSet(viewsets.ViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
         data = DashboardSelector.get_admin_overview()
         return Response(data)
-
-    #TODO: Cần điều chỉnh cho phù hợp với hệ thống hiện tại
     
     @action(detail=False, methods=['get'], url_path='company')
     def company_stats(self, request):
-        # Assuming user is linked to a company (need to check implementation detail of Company user)
-        # Ideally: request.user.company or check Recruiter profile.
-        # For strict compliance, checking if user has 'company' attribute or is a recruiter
-        if not hasattr(request.user, 'company_profile'): # Adjust based on actual User model
-             # Fallback/Dummy check for demo if Company Profile not linked directly to User
-             # Assuming standard Recruiter implementation
-             pass
+        """
+        Get high-level stats for company dashboard
+        """
+        user = request.user
+        company = None
         
-        # For now, return empty or mock if company not found to avoid crashing
-        # Real implementation depends on where Company is stored on User
-        return Response({'status': 'Company stats implementation pending user-company check'})
+        # Check if user is Company Owner
+        company_profile = getattr(user, 'company_profile', None)
+        if company_profile:
+            company = company_profile
+            
+        # If no company context found, return Forbidden or Empty
+        if not company:
+            return Response(
+                {'error': 'User is not associated with any company'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            data = DashboardSelector.get_company_overview(company)
+            return Response(data)
+        except Exception as e:
+            return Response(
+                {'error': f'Error fetching stats: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class ReportViewSet(viewsets.ModelViewSet):
     serializer_class = GeneratedReportSerializer

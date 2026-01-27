@@ -17,6 +17,7 @@ class SubscriptionPlan(TimeStampedModel):
 class CompanySubscription(TimeStampedModel):
     class Status(models.TextChoices):
         ACTIVE = 'active', _('Active')
+        PENDING = 'pending', _('Pending') # Scheduled to start in future
         EXPIRED = 'expired', _('Expired')
         CANCELLED = 'cancelled', _('Cancelled')
         

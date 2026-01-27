@@ -1,54 +1,88 @@
-import pytest
+"""
+Billing Services Tests - Django TestCase Version
+"""
+from django.test import TestCase
+from django.contrib.auth import get_user_model
+
 from apps.billing.models import SubscriptionPlan
 from apps.billing.services.plans import PlanService
 from apps.billing.services.subscriptions import SubscriptionService
-from apps.billing.services.payments import PaymentService
+from apps.company.companies.models import Company
+from apps.company.industries.models import Industry
 
-@pytest.fixture
-def plan():
-    return SubscriptionPlan.objects.create(
-        name="Pro Plan",
-        slug="pro",
-        price=1000000,
-        currency="VND",
-        duration_days=30
-    )
+User = get_user_model()
 
-@pytest.mark.django_db
-class TestBillingServices:
-    def test_create_plan_service(self):
-        plan = PlanService.create_plan(
-            name="Basic", slug="basic", price=0, duration_days=30, features={"limit": 10}
+
+class TestBillingServices(TestCase):
+    """Tests for Billing Services"""
+    
+    @classmethod
+    def setUpTestData(cls):
+        cls.industry = Industry.objects.create(name="Tech", slug="tech-svc")
+        cls.user = User.objects.create_user(
+            email="billing_svc@test.com",
+            password="password123",
+            first_name="Service",
+            last_name="Test",
+            role='employer'
         )
-        assert plan.price == 0
-        assert plan.slug == "basic"
-
-    def test_subscribe_service(self, company, plan):
-        sub = SubscriptionService.subscribe(company, plan)
-        assert sub.status == 'active'
-        assert sub.plan == plan
-        assert sub.auto_renew is True
-
-    def test_cancel_subscription_service(self, company, plan):
-        SubscriptionService.subscribe(company, plan)
-        sub = SubscriptionService.cancel_subscription(company)
-        assert sub.auto_renew is False
-        
-    def test_upgrade_subscription(self, company, plan):
-        # First sub
-        SubscriptionService.subscribe(company, plan)
+        cls.company = Company.objects.create(
+            user=cls.user,
+            company_name="Service Test Company",
+            slug="service-test-company",
+            industry=cls.industry,
+            description="A service test company"
+        )
+        cls.plan = SubscriptionPlan.objects.create(
+            name="Pro Plan",
+            slug="pro-svc",
+            price=1000000,
+            currency="VND",
+            duration_days=30
+        )
+    
+    def test_create_plan_service(self):
+        """PlanService can create a new subscription plan"""
+        plan = PlanService.create_plan(
+            name="Basic", 
+            slug="basic-test", 
+            price=0, 
+            duration_days=30, 
+            features={"limit": 10}
+        )
+        self.assertEqual(plan.price, 0)
+        self.assertEqual(plan.slug, "basic-test")
+    
+    def test_subscribe_service(self):
+        """SubscriptionService can subscribe a company to a plan"""
+        sub = SubscriptionService.subscribe(self.company, self.plan)
+        self.assertEqual(sub.status, 'active')
+        self.assertEqual(sub.plan, self.plan)
+        self.assertTrue(sub.auto_renew)
+    
+    def test_cancel_subscription_service(self):
+        """SubscriptionService can cancel a subscription"""
+        SubscriptionService.subscribe(self.company, self.plan)
+        sub = SubscriptionService.cancel_subscription(self.company)
+        self.assertFalse(sub.auto_renew)
+    
+    def test_upgrade_subscription(self):
+        """SubscriptionService handles plan upgrades correctly"""
+        # First subscribe
+        SubscriptionService.subscribe(self.company, self.plan)
         
         # Upgrade (change plan)
-        new_plan = SubscriptionPlan.objects.create(name="Ent", slug="ent", price=2000, duration_days=30)
-        new_sub = SubscriptionService.subscribe(company, new_plan)
+        new_plan = SubscriptionPlan.objects.create(
+            name="Enterprise", 
+            slug="ent-test", 
+            price=2000, 
+            duration_days=30
+        )
+        new_sub = SubscriptionService.subscribe(self.company, new_plan)
         
-        assert new_sub.plan == new_plan
-        assert new_sub.status == 'active'
-        # Old sub should be cancelled - accessing via manager
-        old_sub = company.subscriptions.filter(plan=plan).first()
-        assert old_sub.status == 'cancelled'
-        # Model defines OneToOne related_name='subscription'.
-        # If we create a new one, does it overwrite or error?
-        # Service logic: current_sub.status = Cancelled. Then create NEW.
-        # But OneToOneField limits to ONE record if strictly enforced unique?
-        # Let's check model definition.
+        self.assertEqual(new_sub.plan, new_plan)
+        self.assertEqual(new_sub.status, 'active')
+        
+        # Old sub should be cancelled
+        old_sub = self.company.subscriptions.filter(plan=self.plan).first()
+        self.assertEqual(old_sub.status, 'cancelled')

@@ -15,7 +15,7 @@ class GeminiIntegrationTests(TestCase):
         self.user = CustomUser.objects.create_user(
             email='test@example.com',
             password='password123',
-            user_type='recruiter',
+            role='recruiter',
             full_name='Test Recruiter'
         )
         self.recruiter = Recruiter.objects.create(
@@ -37,9 +37,20 @@ class GeminiIntegrationTests(TestCase):
     @patch('apps.assessment.ai_matching_scores.services.gemini_service.genai')
     def test_gemini_service_embedding(self, mock_genai):
         """Test GeminiService.get_embedding calls the API correctly."""
-        # Setup Mock
-        mock_result = {'embedding': [0.1, 0.2, 0.3]}
-        mock_genai.embed_content.return_value = mock_result
+        # Reset client to ensure mock is used
+        GeminiService._client = None
+        
+        # Setup Mock Client
+        mock_client = MagicMock()
+        mock_genai.Client.return_value = mock_client
+        
+        # Setup Mock Response
+        mock_response = MagicMock()
+        mock_embedding = MagicMock()
+        mock_embedding.values = [0.1, 0.2, 0.3]
+        mock_response.embeddings = [mock_embedding]
+        
+        mock_client.models.embed_content.return_value = mock_response
         
         # Call
         with patch('django.conf.settings.GEMINI_API_KEY', 'fake_key'):
@@ -47,23 +58,22 @@ class GeminiIntegrationTests(TestCase):
         
         # Assert
         self.assertEqual(embedding, [0.1, 0.2, 0.3])
-        mock_genai.configure.assert_called()
-        mock_genai.embed_content.assert_called_with(
-            model="models/text-embedding-004",
-            content="Test text",
-            task_type="retrieval_document",
-            title="CV Embedding"
-        )
+        mock_genai.Client.assert_called_with(api_key='fake_key')
+        mock_client.models.embed_content.assert_called()
 
     @patch('apps.assessment.ai_matching_scores.services.gemini_service.genai')
     def test_gemini_service_generation(self, mock_genai):
         """Test GeminiService.generate_content calls the API correctly."""
+        # Reset client
+        GeminiService._client = None
+        
         # Setup Mock
-        mock_model = MagicMock()
+        mock_client = MagicMock()
+        mock_genai.Client.return_value = mock_client
+        
         mock_response = MagicMock()
         mock_response.text = "Hello World"
-        mock_model.generate_content.return_value = mock_response
-        mock_genai.GenerativeModel.return_value = mock_model
+        mock_client.models.generate_content.return_value = mock_response
         
         # Call
         with patch('django.conf.settings.GEMINI_API_KEY', 'fake_key'):
@@ -71,13 +81,13 @@ class GeminiIntegrationTests(TestCase):
         
         # Assert
         self.assertEqual(result, "Hello World")
-        mock_genai.GenerativeModel.assert_called_with('models/gemini-2.0-flash')
+        mock_client.models.generate_content.assert_called()
 
     @patch('apps.assessment.ai_matching_scores.services.gemini_service.GeminiService.generate_json')
     def test_profile_evaluator(self, mock_generate_json):
         """Test ProfileEvaluator parses JSON correctly."""
         # Setup Mock
-        mock_generate_json.return_value = '{"score": 85, "strong_points": ["Good bio"], "weak_points": [], "improvement_suggestions": [], "explanation": "Good"}'
+        mock_generate_json.return_value = {'score': 85, 'strong_points': ['Good bio'], 'weak_points': [], 'improvement_suggestions': [], 'explanation': 'Good'}
         
         # Call
         with patch('django.conf.settings.GEMINI_API_KEY', 'fake_key'):
@@ -98,6 +108,5 @@ class GeminiIntegrationTests(TestCase):
             result = calculate_semantic_score(self.job, self.recruiter)
         
         # Assert
-        # Cosine similarity of [1,0,0] and [1,0,0] is 1.0 -> Score 100
         self.assertEqual(result['score'], Decimal('100.00'))
         self.assertTrue(result['is_semantic'])

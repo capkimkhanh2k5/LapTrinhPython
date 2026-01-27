@@ -10,6 +10,10 @@ class ReferralProgram(TimeStampedModel):
         PAUSED = 'paused', _('Paused')
         ENDED = 'ended', _('Ended')
 
+    class RewardType(models.TextChoices):
+        FIXED = 'fixed', _('Fixed Amount')
+        PERCENTAGE = 'percentage', _('Percentage of Salary')
+
     company = models.ForeignKey(
         'company_companies.Company',
         on_delete=models.CASCADE,
@@ -18,10 +22,18 @@ class ReferralProgram(TimeStampedModel):
     title = models.CharField(max_length=255)
     description = models.TextField()
     
-    # TODO: Cần kiểm tra, tìm hướng thưởng khác
-    # Hiện tại đang dùng mức thưởng cố định
-
-    reward_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    # Reward Configuration
+    reward_type = models.CharField(
+        max_length=20,
+        choices=RewardType.choices,
+        default=RewardType.FIXED,
+        verbose_name=_('Loại thưởng')
+    )
+    reward_amount = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2,
+        verbose_name=_('Giá trị thưởng (Tiền hoặc %)')
+    )
     currency = models.CharField(max_length=10, default='VND')
     
     status = models.CharField(
@@ -82,6 +94,7 @@ class Referral(TimeStampedModel):
         default=Status.PENDING
     )
     referral_date = models.DateTimeField(auto_now_add=True)
+    paid_at = models.DateTimeField(null=True, blank=True, verbose_name=_('Ngày thanh toán'))
     notes = models.TextField(blank=True)
 
     @property

@@ -1,6 +1,5 @@
 # Calculators module for AI Matching
-
-#TODO: XEM XÉT LẠI KỸ LƯỠNG TOÀN BỘ TRONG FOLDER NÀY ĐỂ CÓ THỂ XỬ LÝ TỐT NHẤT
+# Updated: 2026-01-27 - Fine-tuned weights for fairer scoring
 
 from .skill_calculator import calculate_skill_score
 from .experience_calculator import calculate_experience_score

@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from datetime import datetime
 
 from .models import Interview
+from apps.recruitment.applications.models import Application
 
 from .serializers import (
     InterviewListSerializer, InterviewDetailSerializer,

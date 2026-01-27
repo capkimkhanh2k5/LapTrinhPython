@@ -127,18 +127,18 @@ class AssessmentTestViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check retake eligibility first
-        eligibility = check_retake_eligibility(pk, recruiter.id)
-        if not eligibility['can_retake']:
-            return Response(
-                {
-                    'error': 'Maximum retake limit exceeded',
-                    'details': eligibility
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
         try:
+            # Check retake eligibility first
+            eligibility = check_retake_eligibility(pk, recruiter.id)
+            if not eligibility['can_retake']:
+                return Response(
+                    {
+                        'error': 'Maximum retake limit exceeded',
+                        'details': eligibility
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             input_data = StartTestInput(
                 test_id=pk,
                 recruiter_id=recruiter.id

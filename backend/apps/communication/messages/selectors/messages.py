@@ -76,10 +76,8 @@ def list_messages(thread_id: int, user_id: int) -> Optional[QuerySet]:
 def count_unread_messages(user_id: int) -> int:
     """
     Count total unread messages across all threads for a user.
-    TODO: Implement MongoDB aggregation for unread count.
     """
-    # Placeholder for Migration phase
-    return 0
+    return MongoChatService.get_total_unread_count(user_id)
 
 
 def get_thread_between_users(user_ids: list[int]) -> Optional[MessageThread]:

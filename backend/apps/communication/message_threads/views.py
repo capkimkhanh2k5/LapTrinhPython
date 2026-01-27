@@ -177,7 +177,7 @@ class MessageThreadViewSet(
                 sender=request.user,
                 data=MessageCreateInput(**serializer.validated_data)
             )
-            response_serializer = MessageSerializer(message)
+            response_serializer = MongoMessageSerializer(message)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
         except ValueError as e:
             return Response(

@@ -152,7 +152,8 @@ class RecruiterCVViewSetTests(TestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.post(f'/api/recruiters/{self.recruiter.id}/cvs/{self.cv.id}/preview/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('preview_url', response.data)
+        # API returns html_content for preview rendering
+        self.assertIn('html_content', response.data)
     
     def test_generate_cv(self):
         """Test POST /api/recruiters/:id/cvs/generate/ - Auto-generate CV"""

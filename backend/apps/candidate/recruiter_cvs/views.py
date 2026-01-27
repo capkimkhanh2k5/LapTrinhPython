@@ -199,7 +199,6 @@ class RecruiterCVViewSet(viewsets.ModelViewSet):
         cv.save(update_fields=['is_public'])
         return Response(RecruiterCVListSerializer(cv).data)
     
-    #TODO: Cần hoàn thiện generate CV sau
     def generate(self, request, *args, **kwargs):
         """
         POST /generate/

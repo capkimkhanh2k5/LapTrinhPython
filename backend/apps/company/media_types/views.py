@@ -66,9 +66,9 @@ class MediaTypeViewSet(viewsets.GenericViewSet):
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
-    def update(self, request, pk=None):
+    def update(self, request, pk=None, partial=False):
         """
-        PUT /api/media-types/:id/
+        PUT/PATCH /api/media-types/:id/
         Cập nhật loại media (admin only)
         """
         media_type = get_media_type_by_id(pk)
@@ -78,7 +78,7 @@ class MediaTypeViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        serializer = MediaTypeUpdateSerializer(data=request.data)
+        serializer = MediaTypeUpdateSerializer(data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         
         try:
@@ -87,6 +87,9 @@ class MediaTypeViewSet(viewsets.GenericViewSet):
             return Response(MediaTypeSerializer(updated).data)
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
+    def partial_update(self, request, pk=None):
+        return self.update(request, pk, partial=True)
     
     def destroy(self, request, pk=None):
         """

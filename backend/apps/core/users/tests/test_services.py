@@ -1,5 +1,7 @@
-import pytest
-from django.utils import timezone
+"""
+User Services Tests - Django TestCase Version
+"""
+from django.test import TestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.core.users.models import CustomUser
@@ -15,12 +17,11 @@ from apps.core.users.services.auth import (
 # TEST: CREATE USER SERVICE
 # ============================================================================
 
-@pytest.mark.django_db
-class TestCreateUserService:
-    """Test cases cho service create_user trong services/users.py"""
+class TestCreateUserService(TestCase):
+    """Test cases for create_user service"""
     
     def test_create_user_success(self):
-        """Test tạo user thành công"""
+        """Test successful user creation"""
         user_input = UserCreateInput(
             email="test@example.com",
             password="strongpassword123",
@@ -29,14 +30,14 @@ class TestCreateUserService:
         )
         user = create_user(data=user_input)
         
-        assert user.email == "test@example.com"
-        assert user.full_name == "Nguyễn Văn A"
-        assert user.role == "recruiter"
-        assert user.check_password("strongpassword123")
-        assert CustomUser.objects.count() == 1
+        self.assertEqual(user.email, "test@example.com")
+        self.assertEqual(user.full_name, "Nguyễn Văn A")
+        self.assertEqual(user.role, "recruiter")
+        self.assertTrue(user.check_password("strongpassword123"))
+        self.assertEqual(CustomUser.objects.count(), 1)
     
     def test_create_user_with_company_role(self):
-        """Test tạo user với role company"""
+        """Test user creation with company role"""
         user_input = UserCreateInput(
             email="company@example.com",
             password="companypass123",
@@ -45,10 +46,10 @@ class TestCreateUserService:
         )
         user = create_user(data=user_input)
         
-        assert user.role == "company"
+        self.assertEqual(user.role, "company")
     
     def test_create_user_default_role(self):
-        """Test tạo user với role mặc định là recruiter"""
+        """Test user creation with default recruiter role"""
         user_input = UserCreateInput(
             email="default@example.com",
             password="defaultpass123",
@@ -56,32 +57,25 @@ class TestCreateUserService:
         )
         user = create_user(data=user_input)
         
-        assert user.role == "recruiter"
+        self.assertEqual(user.role, "recruiter")
 
 
 # ============================================================================
 # TEST: LOGIN USER SERVICE
 # ============================================================================
 
-@pytest.mark.django_db
-class TestLoginUserService:
-    """Test cases cho service login_user trong services/auth.py"""
+class TestLoginUserService(TestCase):
+    """Test cases for login_user service"""
     
-    @pytest.fixture
-    def active_user(self):
-        """Fixture tạo user active để test login"""
-        return CustomUser.objects.create_user(
+    def setUp(self):
+        self.active_user = CustomUser.objects.create_user(
             email="active@example.com",
             password="password123",
             full_name="Active User",
             role="recruiter",
             status="active"
         )
-    
-    @pytest.fixture
-    def inactive_user(self):
-        """Fixture tạo user bị khóa"""
-        return CustomUser.objects.create_user(
+        self.inactive_user = CustomUser.objects.create_user(
             email="inactive@example.com",
             password="password123",
             full_name="Inactive User",
@@ -89,22 +83,22 @@ class TestLoginUserService:
             status="inactive"
         )
     
-    def test_login_success(self, active_user):
-        """Test login thành công"""
+    def test_login_success(self):
+        """Test successful login"""
         login_input = LoginInput(
             email="active@example.com",
             password="password123"
         )
         result = login_user(data=login_input)
         
-        assert 'access_token' in result
-        assert 'refresh_token' in result
-        assert 'user' in result
-        assert result['user'].email == "active@example.com"
+        self.assertIn('access_token', result)
+        self.assertIn('refresh_token', result)
+        self.assertIn('user', result)
+        self.assertEqual(result['user'].email, "active@example.com")
     
-    def test_login_updates_last_login(self, active_user):
-        """Test login cập nhật last_login"""
-        before_login = active_user.last_login
+    def test_login_updates_last_login(self):
+        """Test login updates last_login"""
+        before_login = self.active_user.last_login
         
         login_input = LoginInput(
             email="active@example.com",
@@ -112,102 +106,90 @@ class TestLoginUserService:
         )
         login_user(data=login_input)
         
-        active_user.refresh_from_db()
-        assert active_user.last_login is not None
-        assert active_user.last_login != before_login
+        self.active_user.refresh_from_db()
+        self.assertIsNotNone(self.active_user.last_login)
+        self.assertNotEqual(self.active_user.last_login, before_login)
     
     def test_login_wrong_email(self):
-        """Test login với email không tồn tại"""
+        """Test login with non-existent email"""
         login_input = LoginInput(
             email="notexist@example.com",
             password="password123"
         )
         
-        with pytest.raises(AuthenticationError) as exc_info:
+        with self.assertRaises(AuthenticationError) as ctx:
             login_user(data=login_input)
         
-        assert "Email không tồn tại" in str(exc_info.value)
+        self.assertIn("Email không tồn tại", str(ctx.exception))
     
-    def test_login_wrong_password(self, active_user):
-        """Test login với password sai"""
+    def test_login_wrong_password(self):
+        """Test login with wrong password"""
         login_input = LoginInput(
             email="active@example.com",
             password="wrongpassword"
         )
         
-        with pytest.raises(AuthenticationError) as exc_info:
+        with self.assertRaises(AuthenticationError) as ctx:
             login_user(data=login_input)
         
-        assert "Mật khẩu không đúng" in str(exc_info.value)
+        self.assertIn("Mật khẩu không đúng", str(ctx.exception))
     
-    def test_login_inactive_user(self, inactive_user):
-        """Test login với user bị khóa"""
+    def test_login_inactive_user(self):
+        """Test login with locked user"""
         login_input = LoginInput(
             email="inactive@example.com",
             password="password123"
         )
         
-        with pytest.raises(AuthenticationError) as exc_info:
+        with self.assertRaises(AuthenticationError) as ctx:
             login_user(data=login_input)
         
-        assert "Tài khoản đã bị khóa" in str(exc_info.value)
+        self.assertIn("Tài khoản đã bị khóa", str(ctx.exception))
 
 
 # ============================================================================
 # TEST: LOGOUT USER SERVICE
 # ============================================================================
 
-@pytest.mark.django_db
-class TestLogoutUserService:
-    """Test cases cho service logout_user trong services/auth.py"""
+class TestLogoutUserService(TestCase):
+    """Test cases for logout_user service"""
     
-    @pytest.fixture
-    def user_with_token(self):
-        """Fixture tạo user và JWT token"""
-        user = CustomUser.objects.create_user(
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
             email="logout@example.com",
             password="password123",
             full_name="Logout User",
             role="recruiter",
             status="active"
         )
-        refresh = RefreshToken.for_user(user)
-        return {
-            'user': user,
-            'refresh_token': str(refresh)
-        }
+        self.refresh = RefreshToken.for_user(self.user)
+        self.refresh_token = str(self.refresh)
     
-    def test_logout_success(self, user_with_token):
-        """Test logout thành công"""
-        logout_input = LogoutInput(
-            refresh_token=user_with_token['refresh_token']
-        )
+    def test_logout_success(self):
+        """Test successful logout"""
+        logout_input = LogoutInput(refresh_token=self.refresh_token)
         result = logout_user(data=logout_input)
         
-        assert result is True
+        self.assertTrue(result)
     
     def test_logout_invalid_token(self):
-        """Test logout với token không hợp lệ"""
-        logout_input = LogoutInput(
-            refresh_token="invalid_token_here"
-        )
+        """Test logout with invalid token"""
+        logout_input = LogoutInput(refresh_token="invalid_token_here")
         
-        with pytest.raises(AuthenticationError) as exc_info:
+        with self.assertRaises(AuthenticationError) as ctx:
             logout_user(data=logout_input)
         
-        assert "Không thể logout" in str(exc_info.value)
+        self.assertIn("Không thể logout", str(ctx.exception))
     
-    def test_logout_already_blacklisted_token(self, user_with_token):
-        """Test logout với token đã bị blacklist"""
-        logout_input = LogoutInput(
-            refresh_token=user_with_token['refresh_token']
-        )
+    def test_logout_already_blacklisted_token(self):
+        """Test logout with already blacklisted token"""
+        logout_input = LogoutInput(refresh_token=self.refresh_token)
         
-        # Logout lần 1 - thành công
+        # First logout - success
         logout_user(data=logout_input)
         
-        # Logout lần 2 - token đã bị blacklist
-        with pytest.raises(AuthenticationError):
+        # Second logout - token already blacklisted
+        with self.assertRaises(AuthenticationError):
             logout_user(data=logout_input)
 
 
@@ -215,12 +197,11 @@ class TestLogoutUserService:
 # TEST: REGISTER USER SERVICE
 # ============================================================================
 
-@pytest.mark.django_db
-class TestRegisterUserService:
-    """Test cases cho service register_user trong services/auth.py"""
+class TestRegisterUserService(TestCase):
+    """Test cases for register_user service"""
     
     def test_register_success(self):
-        """Test đăng ký thành công"""
+        """Test successful registration"""
         register_input = RegisterInput(
             email="newuser@example.com",
             password="newpassword123",
@@ -229,15 +210,15 @@ class TestRegisterUserService:
         )
         result = register_user(data=register_input)
         
-        assert 'access_token' in result
-        assert 'refresh_token' in result
-        assert 'user' in result
-        assert result['user'].email == "newuser@example.com"
-        assert result['user'].full_name == "New User"
-        assert CustomUser.objects.count() == 1
+        self.assertIn('access_token', result)
+        self.assertIn('refresh_token', result)
+        self.assertIn('user', result)
+        self.assertEqual(result['user'].email, "newuser@example.com")
+        self.assertEqual(result['user'].full_name, "New User")
+        self.assertEqual(CustomUser.objects.count(), 1)
     
     def test_register_with_company_role(self):
-        """Test đăng ký với role company"""
+        """Test registration with company role"""
         register_input = RegisterInput(
             email="company@example.com",
             password="companypass123",
@@ -246,11 +227,11 @@ class TestRegisterUserService:
         )
         result = register_user(data=register_input)
         
-        assert result['user'].role == "company"
+        self.assertEqual(result['user'].role, "company")
     
     def test_register_duplicate_email(self):
-        """Test đăng ký với email đã tồn tại"""
-        # Tạo user trước
+        """Test registration with existing email"""
+        # Create user first
         CustomUser.objects.create_user(
             email="existing@example.com",
             password="password123",
@@ -258,7 +239,7 @@ class TestRegisterUserService:
             role="recruiter"
         )
         
-        # Đăng ký với cùng email
+        # Register with same email
         register_input = RegisterInput(
             email="existing@example.com",
             password="newpassword123",
@@ -266,13 +247,13 @@ class TestRegisterUserService:
             role="recruiter"
         )
         
-        with pytest.raises(AuthenticationError) as exc_info:
+        with self.assertRaises(AuthenticationError) as ctx:
             register_user(data=register_input)
         
-        assert "Email đã được sử dụng" in str(exc_info.value)
+        self.assertIn("Email đã được sử dụng", str(ctx.exception))
     
     def test_register_returns_jwt_tokens(self):
-        """Test đăng ký trả về JWT tokens hợp lệ"""
+        """Test registration returns valid JWT tokens"""
         register_input = RegisterInput(
             email="jwttest@example.com",
             password="jwtpassword123",
@@ -282,9 +263,9 @@ class TestRegisterUserService:
         result = register_user(data=register_input)
         
         # Verify tokens are not empty
-        assert len(result['access_token']) > 0
-        assert len(result['refresh_token']) > 0
+        self.assertGreater(len(result['access_token']), 0)
+        self.assertGreater(len(result['refresh_token']), 0)
         
         # Verify refresh token can be decoded
         refresh = RefreshToken(result['refresh_token'])
-        assert refresh is not None
+        self.assertIsNotNone(refresh)

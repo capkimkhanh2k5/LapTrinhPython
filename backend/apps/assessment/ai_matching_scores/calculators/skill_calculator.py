@@ -74,7 +74,8 @@ def calculate_skill_score(job: Job, recruiter: Recruiter) -> dict:
         required_proficiency = job_skill.proficiency_level or 'intermediate'
         
         # Weight: required skills are worth more
-        skill_weight = Decimal('2.0') if is_required else Decimal('1.0')
+        # UPDATED: Increased weight for required skills (3x vs 1x for optional)
+        skill_weight = Decimal('3.0') if is_required else Decimal('1.0')
         max_skill_points = skill_weight * Decimal('100')
         max_points += max_skill_points
         

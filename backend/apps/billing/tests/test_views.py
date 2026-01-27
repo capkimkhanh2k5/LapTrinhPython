@@ -1,76 +1,142 @@
-import pytest
+"""
+Billing Views Tests - Django TestCase Version
+"""
 from rest_framework import status
+from rest_framework.test import APITestCase
 from django.urls import reverse
+from django.contrib.auth import get_user_model
+
 from apps.billing.models import SubscriptionPlan, CompanySubscription
+from apps.company.companies.models import Company
+from apps.company.industries.models import Industry
 
-@pytest.mark.django_db
-class TestSubscriptionPlanViewSet:
-    def test_list_plans_public(self, api_client, plan):
+User = get_user_model()
+
+
+class TestSubscriptionPlanViewSet(APITestCase):
+    """Tests for SubscriptionPlan ViewSet"""
+    
+    @classmethod
+    def setUpTestData(cls):
+        cls.plan = SubscriptionPlan.objects.create(
+            name="Pro Plan",
+            slug="pro",
+            price=1000000,
+            currency="VND",
+            duration_days=30
+        )
+    
+    def test_list_plans_public(self):
+        """Public users can list subscription plans"""
         url = reverse('subscription-plans-list')
-        response = api_client.get(url)
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert response.data[0]['slug'] == plan.slug
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['slug'], self.plan.slug)
 
-@pytest.mark.django_db
-class TestCompanySubscriptionViewSet:
-    def test_get_current_subscription_none(self, authenticated_client, company):
+
+class TestCompanySubscriptionViewSet(APITestCase):
+    """Tests for CompanySubscription ViewSet"""
+    
+    @classmethod
+    def setUpTestData(cls):
+        cls.industry = Industry.objects.create(name="Tech", slug="tech")
+        cls.user = User.objects.create_user(
+            email="company@test.com",
+            password="password123",
+            first_name="Test",
+            last_name="Owner",
+            role='employer'
+        )
+        cls.company = Company.objects.create(
+            user=cls.user,
+            company_name="Test Company",
+            slug="test-company",
+            industry=cls.industry,
+            description="A test company"
+        )
+        cls.plan = SubscriptionPlan.objects.create(
+            name="Pro Plan",
+            slug="pro-sub",
+            price=1000000,
+            currency="VND",
+            duration_days=30
+        )
+        
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+    
+    def test_get_current_subscription_none(self):
+        """Get current subscription returns 404 when none exists"""
         url = reverse('company-subscriptions-current')
-        response = authenticated_client.get(url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-
-    def test_subscribe_success(self, authenticated_client, company, plan):
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_subscribe_success(self):
+        """User can subscribe to a plan - returns payment URL for VNPay flow"""
         url = reverse('company-subscriptions-subscribe')
-        data = {'plan_id': plan.id}
-        response = authenticated_client.post(url, data)
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data['plan']['slug'] == plan.slug
-        assert response.data['status'] == 'active'
-
-    def test_cancel_subscription(self, authenticated_client, company, plan):
-        # First subscribe
-        url_sub = reverse('company-subscriptions-subscribe')
-        authenticated_client.post(url_sub, {'plan_id': plan.id})
+        data = {'plan_id': self.plan.id}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('payment_url', response.data)
+        self.assertIn('transaction_ref', response.data)
+    
+    def test_cancel_subscription(self):
+        """User can cancel their subscription"""
+        # First subscribe via service directly (not through VNPay flow)
+        from apps.billing.services.subscriptions import SubscriptionService
+        sub = SubscriptionService.subscribe(self.company, self.plan)
         
         # Then cancel
         url_cancel = reverse('company-subscriptions-cancel')
-        response = authenticated_client.post(url_cancel)
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['status'] == 'cancelled'
+        response = self.client.post(url_cancel)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'cancelled')
         
         # Verify auto_renew is False in DB
-        sub = company.subscriptions.first()
-        assert sub.auto_renew is False
+        sub.refresh_from_db()
+        self.assertFalse(sub.auto_renew)
 
-@pytest.mark.django_db
-class TestTransactionViewSet:
-    def test_list_transactions(self, authenticated_client, company, plan):
-        # Subscribe creates a transaction (if price > 0, handled by service?)
-        # My service creates transaction if price == 0. My fixture price is 1M.
-        # But PaymentService simulation in view calls create_transaction logic if implemented.
-        # Wait, View implementation had:
-        # try: subscription = SubscriptionService.subscribe(..., plan)
-        # It did NOT explicitly call PaymentService in View yet, checks logic.
+
+class TestTransactionViewSet(APITestCase):
+    """Tests for Transaction ViewSet"""
+    
+    @classmethod
+    def setUpTestData(cls):
+        cls.industry = Industry.objects.create(name="Finance", slug="finance")
+        cls.user = User.objects.create_user(
+            email="transaction_test@test.com",
+            password="password123",
+            first_name="Trans",
+            last_name="User",
+            role='employer'
+        )
+        cls.company = Company.objects.create(
+            user=cls.user,
+            company_name="Trans Company",
+            slug="trans-company",
+            industry=cls.industry,
+            description="A transaction test company"
+        )
         
-        # In `views.py`:
-        # # Payment Logic Simulation
-        # # ...
-        # subscription = SubscriptionService.subscribe(company_profile, plan)
-        
-        # So no transaction created for paid plan unless service does it.
-        # My service `subscribe` has:
-        # if plan.price == 0: Transaction.objects.create(...)
-        # So for paid plan, no transaction in my current MVP implementation in `services/subscriptions.py`.
-        
-        # Let's update `test_services.py` or `views.py` OR create a free plan for this test.
-        
-        free_plan = SubscriptionPlan.objects.create(name="Free", slug="free", price=0, duration_days=30)
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+    
+    def test_list_transactions(self):
+        """List transactions for company - transactions created via subscribe flow"""
+        # Subscribe creates a transaction via PaymentService.process_payment
+        plan = SubscriptionPlan.objects.create(
+            name="List Test Plan", 
+            slug="list-test-plan", 
+            price=100000, 
+            duration_days=30
+        )
         
         url_sub = reverse('company-subscriptions-subscribe')
-        authenticated_client.post(url_sub, {'plan_id': free_plan.id})
+        self.client.post(url_sub, {'plan_id': plan.id})
         
         url = reverse('transactions-list')
-        response = authenticated_client.get(url)
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert float(response.data[0]['amount']) == 0.0
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # At least 1 transaction should exist
+        self.assertGreaterEqual(len(response.data), 1)

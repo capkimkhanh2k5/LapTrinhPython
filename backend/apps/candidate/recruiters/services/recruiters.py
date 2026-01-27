@@ -5,6 +5,8 @@ from django.db import transaction
 from apps.candidate.recruiters.models import Recruiter
 from apps.company.companies.models import Company
 from apps.geography.addresses.models import Address
+from apps.candidate.recruiters.services.ai_evaluation import ProfileEvaluator
+    
 
 class RecruiterInput(BaseModel):
     current_company: Optional[Company] = None
@@ -36,9 +38,6 @@ def create_recruiter_service(user, data: RecruiterInput) -> Recruiter:
     """
     if hasattr(user, 'recruiter_profile'):
         raise ValueError("User already has a recruiter profile.")
-        
-    #TODO: Điều chỉnh để có thể phù hợp
-    #Sử dụng default tạm thời
 
     fields = data.dict(exclude_unset=True)
     recruiter = Recruiter.objects.create(user=user, **fields)
@@ -77,104 +76,138 @@ def delete_recruiter_service(recruiter: Recruiter) -> None:
 
 def calculate_profile_completeness_service(recruiter: Recruiter) -> dict:
     """
-    Tính toán mức độ hoàn thiện hồ sơ.
+    Calculate profile completeness using weighted scoring system.
+    
+    Weights:
+    - Avatar: 10 pts
+    - Bio (>50 chars): 15 pts
+    - Experience (>1 item): 20 pts
+    - Education (>0 item): 10 pts
+    - Skills (>3 items): 15 pts
+    - Contact Info (Links): 10 pts
+    - Projects/Certifications: 20 pts (Bonus)
+    
+    Total: Max 100 points (capped)
     """
     score = 0
     missing_fields = []
+    details = {}
     
-    #TODO: Điều chỉnh để có thể phù hợp sau này tích hợp AI để có thể đánh giá mức độ hoàn thiện hồ sơ
-    
-    # Check fields
-    if recruiter.bio:
-        score += 10
-    else:
-        missing_fields.append('bio')
-    
-    if recruiter.current_position:
-        score += 10
-    else:
-        missing_fields.append('current_position')
-    
-    if recruiter.current_company:
-        score += 10
-    else:
-        missing_fields.append('current_company')
-    
-    if recruiter.years_of_experience:
-        score += 10
-    else:
-        missing_fields.append('years_of_experience')
-    
-    if recruiter.highest_education_level:
-        score += 10
-    else:
-        missing_fields.append('highest_education_level')
-
+    # 1. Avatar (10 pts)
     if recruiter.user.avatar_url:
         score += 10
+        details['avatar'] = 10
     else:
-        missing_fields.append('avatar') 
+        missing_fields.append('avatar')
+        details['avatar'] = 0
     
-    if recruiter.address:
-        score += 10
+    # 2. Bio > 50 chars (15 pts) - Quality check
+    bio = recruiter.bio or ""
+    if len(bio) >= 50:
+        score += 15
+        details['bio'] = 15
+    elif len(bio) > 0:
+        # Partial credit for short bio
+        score += 5
+        details['bio'] = 5
+        missing_fields.append('bio (expand to 50+ chars)')
     else:
-        missing_fields.append('address')
-
+        missing_fields.append('bio')
+        details['bio'] = 0
+    
+    # 3. Experience > 1 item (20 pts)
+    experience_count = recruiter.experience.count() if hasattr(recruiter, 'experience') else 0
+    if experience_count >= 2:
+        score += 20
+        details['experience'] = 20
+    elif experience_count == 1:
+        score += 10
+        details['experience'] = 10
+        missing_fields.append('experience (add more)')
+    else:
+        missing_fields.append('experience')
+        details['experience'] = 0
+    
+    # 4. Education > 0 item (10 pts)
+    education_count = recruiter.education.count() if hasattr(recruiter, 'education') else 0
+    if education_count >= 1:
+        score += 10
+        details['education'] = 10
+    else:
+        missing_fields.append('education')
+        details['education'] = 0
+    
+    # 5. Skills > 3 items (15 pts)
+    skills_count = recruiter.skills.count() if hasattr(recruiter, 'skills') else 0
+    if skills_count >= 4:
+        score += 15
+        details['skills'] = 15
+    elif skills_count >= 1:
+        # Partial credit
+        partial = min(skills_count * 4, 12)  # 4 pts per skill up to 12
+        score += partial
+        details['skills'] = partial
+        missing_fields.append('skills (add more)')
+    else:
+        missing_fields.append('skills')
+        details['skills'] = 0
+    
+    # 6. Contact Info - Links (10 pts)
+    contact_score = 0
     if recruiter.linkedin_url:
-        score += 10
-    else:
-        missing_fields.append('linkedin_url')
-
-    if recruiter.facebook_url:
-        score += 10
-    else:
-        missing_fields.append('facebook_url')
-
-    if recruiter.portfolio_url:
-        score += 10
-    else:
-        missing_fields.append('portfolio_url')
-
-    # Calculate Hard Score (Max 140 points based on 14 items * 10)
-    # Normalize Hard Score to 0-100
-    TOTAL_HARD_ITEMS = 14
-    max_hard_score = TOTAL_HARD_ITEMS * 10
-    normalized_hard_score = (score / max_hard_score) * 100
+        contact_score += 4
+    if recruiter.github_url or recruiter.portfolio_url:
+        contact_score += 3
+    if recruiter.address:
+        contact_score += 3
+    score += contact_score
+    details['contact_info'] = contact_score
+    if contact_score < 10:
+        missing_fields.append('contact_links')
     
-    # AI Evaluation Integration
+    # 7. Projects/Certifications (20 pts - Bonus)
+    projects_count = recruiter.projects.count() if hasattr(recruiter, 'projects') else 0
+    certs_count = recruiter.certifications.count() if hasattr(recruiter, 'certifications') else 0
+    bonus_items = projects_count + certs_count
+    if bonus_items >= 3:
+        score += 20
+        details['projects_certs'] = 20
+    elif bonus_items >= 1:
+        partial = min(bonus_items * 7, 14)  # 7 pts per item up to 14
+        score += partial
+        details['projects_certs'] = partial
+    else:
+        details['projects_certs'] = 0
+    
+    # Cap at 100
+    final_score = min(score, 100)
+    
+    # AI Evaluation Integration (optional, only if basic score > 30%)
     ai_score = 0
-    from apps.candidate.recruiters.services.ai_evaluation import ProfileEvaluator
-    
+
     try:
-        # Only call AI if we have enough basic info (e.g. at least 30% complete)
-        # to avoid wasting quota on empty profiles
-        if normalized_hard_score > 30:
+        if final_score > 30:
             ai_result = ProfileEvaluator.evaluate(recruiter)
             if ai_result:
                 recruiter.ai_assessment_result = ai_result
                 ai_score = ai_result.get('score', 0)
     except Exception as e:
         print(f"AI Eval failed: {e}")
-
-    # Hybrid Formula: 70% Hard + 30% AI
-    # If AI failed or not run, ai_score is 0. 
-    # To avoid penalizing too much when AI fails, we might just use Hard Score or re-weight.
-    # Logic: If AI ran (ai_score > 0 OR we have result), combine. Else use Hard Score only (or partial).
     
-    if recruiter.ai_assessment_result:
-         final_score = (normalized_hard_score * 0.7) + (ai_score * 0.3)
-    else:
-         final_score = normalized_hard_score
-
+    # Hybrid Formula: 70% Hard + 30% AI (if available)
+    if recruiter.ai_assessment_result and ai_score > 0:
+        final_score = int((final_score * 0.7) + (ai_score * 0.3))
+    
     # Update DB
-    recruiter.profile_completeness_score = int(final_score)
-    recruiter.save()
+    recruiter.profile_completeness_score = final_score
+    recruiter.save(update_fields=['profile_completeness_score', 'ai_assessment_result'])
     
     return {
-        'score': int(final_score), 
-        'hard_score': int(normalized_hard_score),
+        'score': final_score,
+        'hard_score': min(score, 100),
         'ai_score': int(ai_score),
-        'missing_fields': missing_fields, 
+        'missing_fields': missing_fields,
+        'details': details,
         'ai_result': getattr(recruiter, 'ai_assessment_result', {})
     }
 

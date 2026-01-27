@@ -19,7 +19,7 @@ class ReferralProgramSerializer(serializers.ModelSerializer):
         model = ReferralProgram
         fields = [
             'id', 'company', 'title', 'description', 
-            'reward_amount', 'currency', 'status', 
+            'reward_type', 'reward_amount', 'currency', 'status', 
             'start_date', 'end_date', 'jobs', 'job_ids',
             'created_at', 'updated_at'
         ]
@@ -54,10 +54,13 @@ class ReferralSerializer(serializers.ModelSerializer):
             'job', 'job_id', 'job_title',
             'referrer', 'referrer_name',
             'candidate_name', 'candidate_email', 'candidate_phone', 
-            'cv_file', 'cv_file_upload', 'status', 'referral_date', 'notes',
-            'created_at', 'updated_at'
+            'cv_file', 'cv_file_upload', 'status', 'referral_date', 
+            'paid_at', 'notes', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['referrer', 'status', 'referral_date', 'created_at', 'updated_at', 'program', 'job', 'cv_file']
+        read_only_fields = [
+            'referrer', 'status', 'referral_date', 'paid_at',
+            'created_at', 'updated_at', 'program', 'job', 'cv_file'
+        ]
 
     def create(self, validated_data):
         file = validated_data.pop('cv_file_upload', None)

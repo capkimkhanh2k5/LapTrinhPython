@@ -43,23 +43,35 @@ class DashboardSelector:
         }
 
     @staticmethod
-    def get_company_overview(company):
+    def get_company_overview(company) -> dict:
         """
         Get stats for a specific company
         """
+        if not company:
+            return {}
+
         # Jobs
         total_jobs = Job.objects.filter(company=company).count()
         active_jobs = Job.objects.filter(company=company, status=Job.Status.PUBLISHED).count()
         
-
+        # Applications
         total_applications = Application.objects.filter(job__company=company).count()
         
         # Subscription
+        plan_name = "Free"
         try:
-            current_sub = CompanySubscription.objects.get(company=company, is_active=True)
-            plan_name = current_sub.plan.name
-        except CompanySubscription.DoesNotExist:
-            plan_name = "None"
+            # Check for active subscription
+            current_sub = CompanySubscription.objects.filter(
+                company=company, 
+                is_active=True,
+                end_date__gte=timezone.now()
+            ).first()
+            
+            if current_sub and current_sub.plan:
+                plan_name = current_sub.plan.name
+        except Exception:
+            # Fallback to defaults on error (e.g. Models missing)
+            pass
 
         return {
             'jobs': {

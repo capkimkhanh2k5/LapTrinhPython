@@ -199,7 +199,7 @@ def send_offer(application: Application, offer_details: str, user, salary: str =
             "candidate_name": application.recruiter.user.full_name,
             "job_title": application.job.title,
             "company_name": application.job.company.company_name,
-            "header_image_url": application.job.company.banner or "",
+            "header_image_url": application.job.company.banner_url or "",
             "salary": salary,
             "start_date": start_date,
             "offer_details": offer_details,

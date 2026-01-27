@@ -12,7 +12,8 @@ from ..models import CustomUser
 
 import string
 from apps.email.services import EmailService
-
+from apps.core.users.services.social_auth import SocialAdapterFactory
+from apps.core.users.exceptions import SocialAuthError
 
 
 # Input Models
@@ -51,35 +52,89 @@ def generate_tokens(user: CustomUser) -> dict:
 
 def verify_social_token(provider: str, token: str) -> dict:
     """
-    Xác thực token với Provider (Google/Facebook/LinkedIn)
-    Returns: dict chứa thông tin user từ provider
+    DEPRECATED: Use social_login() instead.
+    This function is kept for backward compatibility but now uses the new adapter.
     """
-
-    #TODO: Nếu lỗi Social -> kiểm tra tại đây
+    adapter = SocialAdapterFactory.get_adapter(provider)
+    profile = adapter.verify_token(token)
     
-    if provider == 'google':
-        # URL xác thực token của Google
-        response = requests.get(f'https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}')
-        if response.status_code != 200:
-            raise AuthenticationError("Token Google is invalid or expired!")
-        return response.json() # Chứa: email, name, picture, sub...
-        
-    elif provider == 'facebook':
-        # URL xác thực token của Facebook
-        response = requests.get(f'https://graph.facebook.com/me?fields=id,name,email,picture&access_token={token}')
-        if response.status_code != 200:
-            raise AuthenticationError("Token Facebook is invalid or expired!")
-        return response.json()
-        
-    elif provider == 'linkedin':
-        # URL xác thực token của LinkedIn
-        headers = {'Authorization': f'Bearer {token}'}
-        response = requests.get('https://api.linkedin.com/v2/userinfo', headers=headers)
-        if response.status_code != 200:
-            raise AuthenticationError("Token LinkedIn is invalid or expired!")
-        return response.json()
-        
-    raise AuthenticationError(f"Provider {provider} is not supported!")
+    return {
+        'email': profile.email,
+        'name': profile.name,
+        'picture': profile.picture,
+        'sub': profile.provider_id,  # For backward compat with Google naming
+    }
+
+
+def social_login(provider: str, access_token: str) -> dict:
+    """
+    Authenticate user via Social Provider (Google/Facebook/LinkedIn).
+    
+    Uses the SocialAdapterFactory to verify token and get-or-create user.
+    
+    Args:
+        provider: 'google', 'facebook', or 'linkedin'
+        access_token: OAuth2 access token from the provider
+    
+    Returns:
+        dict with keys: access_token, refresh_token, user, is_new_user
+    
+    Raises:
+        SocialAuthError subclasses for various error conditions.
+    """
+    # 1. Get adapter and verify token
+    adapter = SocialAdapterFactory.get_adapter(provider)
+    profile = adapter.verify_token(access_token)
+    
+    # 2. Get or create user
+    is_new_user = False
+    user = None
+    
+    # Try to find by social_id first (most reliable)
+    if profile.provider_id:
+        user = CustomUser.objects.filter(
+            social_provider=profile.provider,
+            social_id=profile.provider_id
+        ).first()
+    
+    # Fallback to email if not found by social_id
+    if not user:
+        user = CustomUser.objects.filter(email=profile.email).first()
+    
+    # Create new user if not exists
+    if not user:
+        is_new_user = True
+        user = CustomUser.objects.create_user(
+            email=profile.email,
+            password=None,  # Social users don't need password
+            full_name=profile.name or profile.email.split('@')[0],
+            social_provider=profile.provider,
+            social_id=profile.provider_id,
+        )
+        user.email_verified = True  # Social login = email verified
+        if profile.picture:
+            user.avatar_url = profile.picture
+        user.save()
+    else:
+        # Update social linking if user exists but wasn't linked
+        if not user.social_id and profile.provider_id:
+            user.social_provider = profile.provider
+            user.social_id = profile.provider_id
+            user.save(update_fields=['social_provider', 'social_id'])
+    
+    # 3. Check user status
+    if user.status != 'active':
+        raise AuthenticationError("Tài khoản đã bị vô hiệu hóa.")
+    
+    # 4. Update last_login
+    user.last_login = timezone.now()
+    user.save(update_fields=['last_login'])
+    
+    # 5. Generate tokens
+    result = generate_tokens(user)
+    result['is_new_user'] = is_new_user
+    
+    return result
 
 
 # Service Functions
@@ -357,9 +412,10 @@ class Verify2FAInput(BaseModel):
     user_id: int
     code: str
     
-def social_login(data: SocialLoginInput) -> dict:
+def _legacy_social_login(data: SocialLoginInput) -> dict:
     """
-    Đăng nhập với tài khoản xã hội
+    DEPRECATED: Use social_login(provider, access_token) instead.
+    This is kept for backward compatibility with old code paths.
     """
     # Xác thực token với Provider để lấy thông tin thực tế
     social_user_data = verify_social_token(data.provider, data.access_token)

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres', # Postgres Full-Text Search
     # Third party
     'rest_framework',
     'rest_framework_simplejwt',
@@ -164,9 +165,9 @@ INSTALLED_APPS = [
     
     # ===== Analytics Domain =====
     'apps.analytics',
-    # 'apps.system.analytics_reports',
+    'apps.system.analytics_reports',
     # 'apps.system.analytics_daily_statistics',
-    # 'apps.system.report_types',
+    'apps.system.report_types',
     # 'apps.system.reports',
     'apps.system.audit_logs',
     'apps.system.search_history',

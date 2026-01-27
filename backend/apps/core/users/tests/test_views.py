@@ -1,5 +1,7 @@
-import pytest
-from rest_framework.test import APIClient
+"""
+User Authentication Views Tests - Django TestCase Version
+"""
+from rest_framework.test import APITestCase
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -7,29 +9,15 @@ from apps.core.users.models import CustomUser
 
 
 # ============================================================================
-# URL PATHS (sau refactoring sang ViewSet pattern)
-# ============================================================================
-# Auth URLs: /api/users/auth/...
-# User URLs: /api/users/...
-
-
-# ============================================================================
 # TEST: LOGIN API
 # ============================================================================
 
-@pytest.mark.django_db
-class TestLoginAPI:
-    """Test cases cho API POST /api/users/auth/login/"""
+class TestLoginAPI(APITestCase):
+    """Test cases for API POST /api/users/auth/login/"""
     
-    @pytest.fixture
-    def api_client(self):
-        """Fixture tạo API client"""
-        return APIClient()
-    
-    @pytest.fixture
-    def active_user(self):
-        """Fixture tạo user active"""
-        return CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.active_user = CustomUser.objects.create_user(
             email="test@example.com",
             password="password123",
             full_name="Test User",
@@ -37,78 +25,73 @@ class TestLoginAPI:
             status="active"
         )
     
-    def test_login_success(self, api_client, active_user):
-        """Test login API thành công"""
-        response = api_client.post('/api/users/auth/login/', {
+    def test_login_success(self):
+        """Test successful login"""
+        response = self.client.post('/api/users/auth/login/', {
             'email': 'test@example.com',
             'password': 'password123'
         }, format='json')
         
-        assert response.status_code == status.HTTP_200_OK
-        assert 'access_token' in response.data
-        assert 'refresh_token' in response.data
-        assert 'user' in response.data
-        assert response.data['user']['email'] == 'test@example.com'
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('access_token', response.data)
+        self.assertIn('refresh_token', response.data)
+        self.assertIn('user', response.data)
+        self.assertEqual(response.data['user']['email'], 'test@example.com')
     
-    def test_login_wrong_email(self, api_client):
-        """Test login với email không tồn tại"""
-        response = api_client.post('/api/users/auth/login/', {
+    def test_login_wrong_email(self):
+        """Test login with non-existent email"""
+        response = self.client.post('/api/users/auth/login/', {
             'email': 'notexist@example.com',
             'password': 'password123'
         }, format='json')
         
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert 'detail' in response.data
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertIn('detail', response.data)
     
-    def test_login_wrong_password(self, api_client, active_user):
-        """Test login với password sai"""
-        response = api_client.post('/api/users/auth/login/', {
+    def test_login_wrong_password(self):
+        """Test login with wrong password"""
+        response = self.client.post('/api/users/auth/login/', {
             'email': 'test@example.com',
             'password': 'wrongpassword'
         }, format='json')
         
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert 'detail' in response.data
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertIn('detail', response.data)
     
-    def test_login_invalid_email_format(self, api_client):
-        """Test login với email sai format"""
-        response = api_client.post('/api/users/auth/login/', {
+    def test_login_invalid_email_format(self):
+        """Test login with invalid email format"""
+        response = self.client.post('/api/users/auth/login/', {
             'email': 'invalid-email',
             'password': 'password123'
         }, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
-    def test_login_missing_password(self, api_client):
-        """Test login thiếu password"""
-        response = api_client.post('/api/users/auth/login/', {
+    def test_login_missing_password(self):
+        """Test login without password"""
+        response = self.client.post('/api/users/auth/login/', {
             'email': 'test@example.com'
         }, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
-    def test_login_empty_body(self, api_client):
-        """Test login với body rỗng"""
-        response = api_client.post('/api/users/auth/login/', {}, format='json')
+    def test_login_empty_body(self):
+        """Test login with empty body"""
+        response = self.client.post('/api/users/auth/login/', {}, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 # ============================================================================
 # TEST: REGISTER API
 # ============================================================================
 
-@pytest.mark.django_db
-class TestRegisterAPI:
-    """Test cases cho API POST /api/users/auth/register/"""
+class TestRegisterAPI(APITestCase):
+    """Test cases for API POST /api/users/auth/register/"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    def test_register_success(self, api_client):
-        """Test đăng ký thành công"""
-        response = api_client.post('/api/users/auth/register/', {
+    def test_register_success(self):
+        """Test successful registration"""
+        response = self.client.post('/api/users/auth/register/', {
             'email': 'newuser@example.com',
             'password': 'password123',
             'password_confirm': 'password123',
@@ -116,15 +99,15 @@ class TestRegisterAPI:
             'role': 'recruiter'
         }, format='json')
         
-        assert response.status_code == status.HTTP_201_CREATED
-        assert 'access_token' in response.data
-        assert 'refresh_token' in response.data
-        assert response.data['user']['email'] == 'newuser@example.com'
-        assert CustomUser.objects.count() == 1
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn('access_token', response.data)
+        self.assertIn('refresh_token', response.data)
+        self.assertEqual(response.data['user']['email'], 'newuser@example.com')
+        self.assertEqual(CustomUser.objects.count(), 1)
     
-    def test_register_with_company_role(self, api_client):
-        """Test đăng ký với role company"""
-        response = api_client.post('/api/users/auth/register/', {
+    def test_register_with_company_role(self):
+        """Test registration with company role"""
+        response = self.client.post('/api/users/auth/register/', {
             'email': 'company@example.com',
             'password': 'password123',
             'password_confirm': 'password123',
@@ -132,11 +115,11 @@ class TestRegisterAPI:
             'role': 'company'
         }, format='json')
         
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data['user']['role'] == 'company'
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['user']['role'], 'company')
     
-    def test_register_duplicate_email(self, api_client):
-        """Test đăng ký với email đã tồn tại"""
+    def test_register_duplicate_email(self):
+        """Test registration with existing email"""
         CustomUser.objects.create_user(
             email="existing@example.com",
             password="password123",
@@ -144,7 +127,7 @@ class TestRegisterAPI:
             role="recruiter"
         )
         
-        response = api_client.post('/api/users/auth/register/', {
+        response = self.client.post('/api/users/auth/register/', {
             'email': 'existing@example.com',
             'password': 'password123',
             'password_confirm': 'password123',
@@ -152,12 +135,12 @@ class TestRegisterAPI:
             'role': 'recruiter'
         }, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'detail' in response.data
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', response.data)
     
-    def test_register_password_mismatch(self, api_client):
-        """Test đăng ký với password_confirm không khớp"""
-        response = api_client.post('/api/users/auth/register/', {
+    def test_register_password_mismatch(self):
+        """Test registration with mismatched passwords"""
+        response = self.client.post('/api/users/auth/register/', {
             'email': 'test@example.com',
             'password': 'password123',
             'password_confirm': 'differentpassword',
@@ -165,12 +148,12 @@ class TestRegisterAPI:
             'role': 'recruiter'
         }, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'password_confirm' in response.data
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password_confirm', response.data)
     
-    def test_register_password_too_short(self, api_client):
-        """Test đăng ký với password quá ngắn (<8 ký tự)"""
-        response = api_client.post('/api/users/auth/register/', {
+    def test_register_password_too_short(self):
+        """Test registration with short password (<8 chars)"""
+        response = self.client.post('/api/users/auth/register/', {
             'email': 'test@example.com',
             'password': '1234567',
             'password_confirm': '1234567',
@@ -178,11 +161,11 @@ class TestRegisterAPI:
             'role': 'recruiter'
         }, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
-    def test_register_invalid_role(self, api_client):
-        """Test đăng ký với role không hợp lệ"""
-        response = api_client.post('/api/users/auth/register/', {
+    def test_register_invalid_role(self):
+        """Test registration with invalid role"""
+        response = self.client.post('/api/users/auth/register/', {
             'email': 'test@example.com',
             'password': 'password123',
             'password_confirm': 'password123',
@@ -190,118 +173,100 @@ class TestRegisterAPI:
             'role': 'admin'
         }, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
-    def test_register_missing_full_name(self, api_client):
-        """Test đăng ký thiếu full_name"""
-        response = api_client.post('/api/users/auth/register/', {
+    def test_register_missing_full_name(self):
+        """Test registration without full_name"""
+        response = self.client.post('/api/users/auth/register/', {
             'email': 'test@example.com',
             'password': 'password123',
             'password_confirm': 'password123',
             'role': 'recruiter'
         }, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 # ============================================================================
 # TEST: LOGOUT API
 # ============================================================================
 
-@pytest.mark.django_db
-class TestLogoutAPI:
-    """Test cases cho API POST /api/users/auth/logout/"""
+class TestLogoutAPI(APITestCase):
+    """Test cases for API POST /api/users/auth/logout/"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def authenticated_user(self, api_client):
-        """Fixture tạo user và authenticate"""
-        user = CustomUser.objects.create_user(
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
             email="logout@example.com",
             password="password123",
             full_name="Logout User",
             role="recruiter",
             status="active"
         )
-        refresh = RefreshToken.for_user(user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return {
-            'user': user,
-            'refresh_token': str(refresh),
-            'access_token': str(refresh.access_token)
-        }
+        self.refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.refresh.access_token}')
     
-    def test_logout_success(self, api_client, authenticated_user):
-        """Test logout thành công"""
-        response = api_client.post('/api/users/auth/logout/', {
-            'refresh_token': authenticated_user['refresh_token']
+    def test_logout_success(self):
+        """Test successful logout"""
+        response = self.client.post('/api/users/auth/logout/', {
+            'refresh_token': str(self.refresh)
         }, format='json')
         
-        assert response.status_code == status.HTTP_200_OK
-        assert 'detail' in response.data
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('detail', response.data)
     
-    def test_logout_invalid_token(self, api_client, authenticated_user):
-        """Test logout với refresh token sai"""
-        response = api_client.post('/api/users/auth/logout/', {
+    def test_logout_invalid_token(self):
+        """Test logout with invalid refresh token"""
+        response = self.client.post('/api/users/auth/logout/', {
             'refresh_token': 'invalid_token_here'
         }, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
-    def test_logout_without_authentication(self, api_client):
-        """Test logout mà chưa login (không có access token)"""
-        response = api_client.post('/api/users/auth/logout/', {
+    def test_logout_without_authentication(self):
+        """Test logout without being logged in"""
+        self.client.credentials()  # Clear credentials
+        response = self.client.post('/api/users/auth/logout/', {
             'refresh_token': 'some_token'
         }, format='json')
         
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
-    def test_logout_missing_refresh_token(self, api_client, authenticated_user):
-        """Test logout thiếu refresh_token"""
-        response = api_client.post('/api/users/auth/logout/', {}, format='json')
+    def test_logout_missing_refresh_token(self):
+        """Test logout without refresh_token"""
+        response = self.client.post('/api/users/auth/logout/', {}, format='json')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 # ============================================================================
 # TEST: USER ME API
 # ============================================================================
 
-@pytest.mark.django_db
-class TestUserMeAPI:
-    """Test cases cho API GET /api/users/me/"""
+class TestUserMeAPI(APITestCase):
+    """Test cases for API GET /api/users/me/"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def authenticated_user(self, api_client):
-        """Fixture tạo user và authenticate"""
-        user = CustomUser.objects.create_user(
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
             email="me@example.com",
             password="password123",
             full_name="Me User",
             role="recruiter",
             status="active"
         )
-        refresh = RefreshToken.for_user(user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return user
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
     
-    def test_get_me_success(self, api_client, authenticated_user):
-        """Test lấy thông tin user hiện tại"""
-        response = api_client.get('/api/users/me/')
+    def test_get_me_success(self):
+        """Test getting current user info"""
+        response = self.client.get('/api/users/me/')
         
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['email'] == 'me@example.com'
-        assert response.data['role'] == 'recruiter'
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], 'me@example.com')
+        self.assertEqual(response.data['role'], 'recruiter')
     
-    def test_get_me_without_authentication(self, api_client):
-        """Test lấy thông tin user mà chưa login"""
-        response = api_client.get('/api/users/me/')
+    def test_get_me_without_authentication(self):
+        """Test getting user info without login"""
+        self.client.credentials()  # Clear credentials
+        response = self.client.get('/api/users/me/')
         
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

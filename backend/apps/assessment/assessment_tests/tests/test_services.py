@@ -23,7 +23,6 @@ from apps.assessment.assessment_tests.services.assessment_tests import (
     calculate_score,
     get_test_results,
     check_retake_eligibility,
-    MAX_RETAKE_ATTEMPTS,
 )
 
 
@@ -138,15 +137,16 @@ class TestStartTest(TestCase):
     
     def test_start_test_max_retakes_exceeded(self):
         """Should raise error when max retakes exceeded."""
-        # Create MAX_RETAKE_ATTEMPTS results
-        for i in range(MAX_RETAKE_ATTEMPTS):
-            TestResult.objects.create(
+        # Create 2 results (Original + 1 Retake). Default max_retakes is 1, so total allowed is 2.
+        for i in range(2):
+            res = TestResult.objects.create(
                 assessment_test=self.test,
                 recruiter=self.recruiter,
                 score=Decimal('50.00'),
                 percentage_score=Decimal('50.00'),
-                started_at=timezone.now()
+                started_at=timezone.now() - timezone.timedelta(days=10+i)
             )
+            TestResult.objects.filter(id=res.id).update(completed_at=timezone.now() - timezone.timedelta(days=10+i, minutes=-30))
         
         input_data = StartTestInput(
             test_id=self.test.id,
@@ -156,7 +156,7 @@ class TestStartTest(TestCase):
         with self.assertRaises(ValueError) as context:
             start_test(input_data)
         
-        self.assertIn('Maximum retake limit', str(context.exception))
+        self.assertIn('Đạt tới giới hạn' if 'Đạt tới giới hạn' in str(context.exception) else 'giới hạn tối đa', str(context.exception))
 
 
 class TestSubmitTest(TestCase):
@@ -356,38 +356,57 @@ class TestRetakeEligibility(TestCase):
     def test_eligibility_no_attempts(self):
         """Should be eligible with no attempts."""
         eligibility = check_retake_eligibility(self.test.id, self.recruiter.id)
-        
         self.assertTrue(eligibility['can_retake'])
         self.assertEqual(eligibility['attempts_used'], 0)
-        self.assertEqual(eligibility['attempts_remaining'], MAX_RETAKE_ATTEMPTS)
+        self.assertEqual(eligibility['attempts_remaining'], self.test.max_retakes + 1)
     
-    def test_eligibility_after_one_attempt(self):
-        """Should be eligible after one attempt."""
-        TestResult.objects.create(
+    def test_eligibility_wait_period(self):
+        """Should not be eligible during wait period."""
+        # Setup: One attempt recently (wait days is 7)
+        res = TestResult.objects.create(
             assessment_test=self.test,
             recruiter=self.recruiter,
             score=Decimal('50.00'),
-            started_at=timezone.now()
+            started_at=timezone.now() - timezone.timedelta(hours=1)
         )
+        TestResult.objects.filter(id=res.id).update(completed_at=timezone.now() - timezone.timedelta(minutes=30))
+        
+        eligibility = check_retake_eligibility(self.test.id, self.recruiter.id)
+        self.assertFalse(eligibility['can_retake'])
+        self.assertEqual(eligibility['wait_days_remaining'], 7)
+    
+    def test_eligibility_after_one_attempt_old(self):
+        """Should be eligible after one attempt if it's old enough."""
+        # Setup: One attempt 10 days ago
+        res = TestResult.objects.create(
+            assessment_test=self.test,
+            recruiter=self.recruiter,
+            score=Decimal('50.00'),
+            started_at=timezone.now() - timezone.timedelta(days=10)
+        )
+        TestResult.objects.filter(id=res.id).update(completed_at=timezone.now() - timezone.timedelta(days=10, minutes=-30))
         
         eligibility = check_retake_eligibility(self.test.id, self.recruiter.id)
         
         self.assertTrue(eligibility['can_retake'])
         self.assertEqual(eligibility['attempts_used'], 1)
-        self.assertEqual(eligibility['attempts_remaining'], MAX_RETAKE_ATTEMPTS - 1)
+        self.assertEqual(eligibility['attempts_remaining'], self.test.max_retakes)
     
     def test_eligibility_max_reached(self):
-        """Should not be eligible after max attempts."""
-        for _ in range(MAX_RETAKE_ATTEMPTS):
-            TestResult.objects.create(
+        """Should not be eligible after max attempts reached (even if wait period passed)."""
+        max_total = self.test.max_retakes + 1
+        for i in range(max_total):
+            res = TestResult.objects.create(
                 assessment_test=self.test,
                 recruiter=self.recruiter,
                 score=Decimal('50.00'),
-                started_at=timezone.now()
+                started_at=timezone.now() - timezone.timedelta(days=100+i)
             )
+            TestResult.objects.filter(id=res.id).update(completed_at=timezone.now() - timezone.timedelta(days=100+i, minutes=-30))
         
         eligibility = check_retake_eligibility(self.test.id, self.recruiter.id)
         
         self.assertFalse(eligibility['can_retake'])
-        self.assertEqual(eligibility['attempts_used'], MAX_RETAKE_ATTEMPTS)
+        self.assertEqual(eligibility['attempts_used'], max_total)
         self.assertEqual(eligibility['attempts_remaining'], 0)
+        self.assertIn("đạt giới hạn tối đa", eligibility['message'])

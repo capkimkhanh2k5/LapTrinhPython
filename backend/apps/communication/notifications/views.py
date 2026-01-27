@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.http import StreamingHttpResponse
+from django.utils import timezone
+from .services.notifications import bulk_mark_as_read
 import json
 import time
 
@@ -156,12 +158,41 @@ class NotificationViewSet(
                 status=status.HTTP_404_NOT_FOUND
             )
     
+    @action(detail=False, methods=['patch'], url_path='mark-read')
+    def bulk_mark_read(self, request):
+        """
+        PATCH /api/notifications/mark-read/
+        
+        Mark multiple or all notifications as read.
+        Body: {"ids": [1,2], "read_all": false}
+        """
+        
+        serializer = NotificationMarkReadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        read_all = serializer.validated_data.get('read_all', False)
+        notification_ids = serializer.validated_data.get('notification_ids', [])
+        
+        if read_all:
+            updated_count = mark_all_as_read(request.user.id)
+            message = 'All notifications marked as read'
+        else:
+            updated_count = bulk_mark_as_read(
+                notification_ids=notification_ids,
+                user_id=request.user.id
+            )
+            message = f'{updated_count} notifications marked as read'
+            
+        return Response({
+            'detail': message,
+            'updated_count': updated_count
+        })
+
     @action(detail=False, methods=['patch'], url_path='read-all')
     def mark_all_read(self, request):
         """
         PATCH /api/notifications/read-all/
-        
-        Mark all notifications as read.
+        Kept for backward compatibility.
         """
         updated_count = mark_all_as_read(request.user.id)
         return Response({
@@ -263,7 +294,6 @@ class NotificationViewSet(
                         }
                         yield f"data: {json.dumps(data)}\n\n"
                 
-                from django.utils import timezone
                 last_check = timezone.now()
                 
                 # Send heartbeat every 30 seconds

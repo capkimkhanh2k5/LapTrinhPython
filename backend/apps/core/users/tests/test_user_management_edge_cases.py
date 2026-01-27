@@ -1,15 +1,11 @@
 """
-Test cases bổ sung cho User Management APIs - Edge cases và Error handling
-Bổ sung các test còn thiếu theo báo cáo phân tích
-
-File: test_user_management_edge_cases.py
-Module 1: Authentication & User Management
+User Management Edge Cases Tests - Django TestCase Version
 """
-import pytest
 import io
 from PIL import Image
+from django.test import TestCase
+from rest_framework.test import APITestCase
 from rest_framework import status
-from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -24,138 +20,118 @@ USER_STATS = '/api/users/stats/'
 USER_EXPORT = '/api/users/export/'
 USER_BULK_ACTION = '/api/users/bulk-action/'
 
-def user_detail(user_id): return f'/api/users/{user_id}/'
-def user_status(user_id): return f'/api/users/{user_id}/status/'
-def user_role(user_id): return f'/api/users/{user_id}/role/'
-def user_avatar(user_id): return f'/api/users/{user_id}/avatar/'
-def user_activity_logs(user_id): return f'/api/users/{user_id}/activity-logs/'
+
+def user_detail(user_id): 
+    return f'/api/users/{user_id}/'
+
+
+def user_status(user_id): 
+    return f'/api/users/{user_id}/status/'
+
+
+def user_role(user_id): 
+    return f'/api/users/{user_id}/role/'
+
+
+def user_avatar(user_id): 
+    return f'/api/users/{user_id}/avatar/'
+
+
+def user_activity_logs(user_id): 
+    return f'/api/users/{user_id}/activity-logs/'
 
 
 # ============================================================================
-# TEST: GET USER DETAIL API - Chưa có test
+# TEST: GET USER DETAIL API
 # ============================================================================
 
-@pytest.mark.django_db
-class TestGetUserDetail:
-    """Test cases cho API GET /api/users/:id/ - Chi tiết user"""
+class TestGetUserDetail(APITestCase):
+    """Test cases for user detail API"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def admin_user(self, api_client):
-        """Fixture tạo admin user và authenticate"""
-        admin = CustomUser.objects.create_superuser(
+    def setUp(self):
+        self.admin = CustomUser.objects.create_superuser(
             email="admin@example.com",
             password="adminpass123"
         )
-        refresh = RefreshToken.for_user(admin)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return admin
-    
-    @pytest.fixture
-    def normal_user(self, api_client):
-        """Fixture tạo normal user và authenticate"""
-        user = CustomUser.objects.create_user(
+        self.normal_user = CustomUser.objects.create_user(
             email="normal@example.com",
             password="password123",
             full_name="Normal User",
             role="recruiter"
         )
-        refresh = RefreshToken.for_user(user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return user
-    
-    @pytest.fixture
-    def target_user(self):
-        """Fixture tạo user để test"""
-        return CustomUser.objects.create_user(
+        self.target_user = CustomUser.objects.create_user(
             email="target@example.com",
             password="password123",
             full_name="Target User",
             role="recruiter"
         )
     
-    def test_get_user_detail_as_admin(self, api_client, admin_user, target_user):
-        """Admin xem chi tiết user → 200"""
-        response = api_client.get(user_detail(target_user.id))
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['email'] == target_user.email
-        assert response.data['full_name'] == target_user.full_name
+    def test_get_user_detail_as_admin(self):
+        """Admin views user detail → 200"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(user_detail(self.target_user.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], self.target_user.email)
+        self.assertEqual(response.data['full_name'], self.target_user.full_name)
     
-    def test_get_user_detail_as_authenticated_user(self, api_client, normal_user, target_user):
-        """User thường xem chi tiết user khác → 200"""
-        response = api_client.get(user_detail(target_user.id))
-        assert response.status_code == status.HTTP_200_OK
+    def test_get_user_detail_as_authenticated_user(self):
+        """Normal user views other user's detail → 200"""
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.get(user_detail(self.target_user.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
     
-    def test_get_user_detail_self(self, api_client, normal_user):
-        """User xem chi tiết chính mình → 200"""
-        response = api_client.get(user_detail(normal_user.id))
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['email'] == normal_user.email
+    def test_get_user_detail_self(self):
+        """User views own detail → 200"""
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.get(user_detail(self.normal_user.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], self.normal_user.email)
     
-    def test_get_user_detail_not_found(self, api_client, admin_user):
-        """Xem chi tiết user không tồn tại → 404"""
-        response = api_client.get(user_detail(99999))
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+    def test_get_user_detail_not_found(self):
+        """View non-existent user → 404"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(user_detail(99999))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
-    def test_get_user_detail_without_authentication(self, api_client, target_user):
-        """Xem chi tiết user mà chưa đăng nhập → 401"""
-        api_client.credentials()  # Clear auth
-        response = api_client.get(user_detail(target_user.id))
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    def test_get_user_detail_without_authentication(self):
+        """View user detail without login → 401"""
+        response = self.client.get(user_detail(self.target_user.id))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 # ============================================================================
 # TEST: LIST USERS API - Edge Cases
 # ============================================================================
 
-@pytest.mark.django_db
-class TestListUsersEdgeCases:
-    """Test cases bổ sung cho API GET /api/users/ - Danh sách users"""
+class TestListUsersEdgeCases(APITestCase):
+    """Test cases for list users edge cases"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def admin_user(self, api_client):
-        admin = CustomUser.objects.create_superuser(
+    def setUp(self):
+        self.admin = CustomUser.objects.create_superuser(
             email="admin@example.com",
             password="adminpass123"
         )
-        refresh = RefreshToken.for_user(admin)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return admin
-    
-    @pytest.fixture
-    def normal_user(self, api_client):
-        user = CustomUser.objects.create_user(
+        self.normal_user = CustomUser.objects.create_user(
             email="normal@example.com",
             password="password123",
             full_name="Normal User",
             role="recruiter"
         )
-        refresh = RefreshToken.for_user(user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return user
     
-    def test_list_users_without_authentication(self, api_client):
-        """Xem danh sách users mà chưa đăng nhập → 401"""
-        api_client.credentials()
-        response = api_client.get(USER_LIST)
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    def test_list_users_without_authentication(self):
+        """List users without login → 401"""
+        response = self.client.get(USER_LIST)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
-    def test_list_users_as_normal_user(self, api_client, normal_user):
-        """User thường xem danh sách users → có thể xem được (tùy permission)"""
-        response = api_client.get(USER_LIST)
-        # Tùy vào thiết kế, có thể là 200 hoặc 403
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
+    def test_list_users_as_normal_user(self):
+        """Normal user lists users → 200 or 403 depending on permission"""
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.get(USER_LIST)
+        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN])
     
-    def test_list_users_with_pagination(self, api_client, admin_user):
-        """Test pagination khi list users"""
-        # Tạo nhiều users
+    def test_list_users_with_pagination(self):
+        """Test pagination when listing users"""
+        # Create many users
         for i in range(15):
             CustomUser.objects.create_user(
                 email=f"user{i}@example.com",
@@ -163,102 +139,75 @@ class TestListUsersEdgeCases:
                 full_name=f"User {i}"
             )
         
-        response = api_client.get(USER_LIST, {'page': 1, 'page_size': 10})
-        assert response.status_code == status.HTTP_200_OK
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(USER_LIST, {'page': 1, 'page_size': 10})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 # ============================================================================
 # TEST: UPDATE USER API - Edge Cases
 # ============================================================================
 
-@pytest.mark.django_db
-class TestUpdateUserEdgeCases:
-    """Test cases bổ sung cho API PUT /api/users/:id/"""
+class TestUpdateUserEdgeCases(APITestCase):
+    """Test cases for update user edge cases"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def admin_user(self, api_client):
-        admin = CustomUser.objects.create_superuser(
+    def setUp(self):
+        self.admin = CustomUser.objects.create_superuser(
             email="admin@example.com",
             password="adminpass123"
         )
-        refresh = RefreshToken.for_user(admin)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return admin
-    
-    @pytest.fixture
-    def normal_user(self, api_client):
-        user = CustomUser.objects.create_user(
+        self.normal_user = CustomUser.objects.create_user(
             email="normal@example.com",
             password="password123",
             full_name="Normal User",
             role="recruiter"
         )
-        refresh = RefreshToken.for_user(user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return user
-    
-    @pytest.fixture
-    def target_user(self):
-        return CustomUser.objects.create_user(
+        self.target_user = CustomUser.objects.create_user(
             email="target@example.com",
             password="password123",
             full_name="Target User",
             role="recruiter"
         )
     
-    def test_update_self_as_normal_user(self, api_client, normal_user):
-        """User tự cập nhật thông tin của mình → 200"""
-        response = api_client.put(user_detail(normal_user.id), {
+    def test_update_self_as_normal_user(self):
+        """User updates own info → 200 or 403 depending on permission"""
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.put(user_detail(self.normal_user.id), {
             'full_name': 'Updated Name'
         })
-        # Có thể là 200 hoặc 403 tùy vào permission
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
+        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN])
     
-    def test_update_other_user_as_normal_user(self, api_client, normal_user, target_user):
-        """User thường cập nhật user khác → 403 (BUG ĐÃ SỬa)"""
-        response = api_client.put(user_detail(target_user.id), {
+    def test_update_other_user_as_normal_user(self):
+        """Normal user updates other user → 403"""
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.put(user_detail(self.target_user.id), {
             'full_name': 'Hacked Name'
         })
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert 'detail' in response.data
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn('detail', response.data)
     
-    def test_update_user_not_found(self, api_client, admin_user):
-        """Cập nhật user không tồn tại → 404"""
-        response = api_client.put(user_detail(99999), {
+    def test_update_user_not_found(self):
+        """Update non-existent user → 404"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.put(user_detail(99999), {
             'full_name': 'New Name'
         })
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 # ============================================================================
 # TEST: UPDATE STATUS API - Edge Cases
 # ============================================================================
 
-@pytest.mark.django_db
-class TestUpdateStatusEdgeCases:
-    """Test cases bổ sung cho API PATCH /api/users/:id/status/"""
+class TestUpdateStatusEdgeCases(APITestCase):
+    """Test cases for update status edge cases"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def admin_user(self, api_client):
-        admin = CustomUser.objects.create_superuser(
+    def setUp(self):
+        self.admin = CustomUser.objects.create_superuser(
             email="admin@example.com",
             password="adminpass123"
         )
-        refresh = RefreshToken.for_user(admin)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return admin
-    
-    @pytest.fixture
-    def target_user(self):
-        return CustomUser.objects.create_user(
+        self.target_user = CustomUser.objects.create_user(
             email="target@example.com",
             password="password123",
             full_name="Target User",
@@ -266,191 +215,172 @@ class TestUpdateStatusEdgeCases:
             status="active"
         )
     
-    def test_update_status_to_inactive(self, api_client, admin_user, target_user):
-        """Admin chuyển user sang inactive → 200"""
-        response = api_client.patch(user_status(target_user.id), {'status': 'inactive'})
-        assert response.status_code == status.HTTP_200_OK
-        target_user.refresh_from_db()
-        assert target_user.status == 'inactive'
+    def test_update_status_to_inactive(self):
+        """Admin changes user to inactive → 200"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(user_status(self.target_user.id), {'status': 'inactive'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.target_user.refresh_from_db()
+        self.assertEqual(self.target_user.status, 'inactive')
     
-    def test_update_status_to_active(self, api_client, admin_user, target_user):
-        """Admin chuyển user sang active → 200"""
-        target_user.status = 'banned'
-        target_user.save()
+    def test_update_status_to_active(self):
+        """Admin changes user to active → 200"""
+        self.target_user.status = 'banned'
+        self.target_user.save()
         
-        response = api_client.patch(user_status(target_user.id), {'status': 'active'})
-        assert response.status_code == status.HTTP_200_OK
-        target_user.refresh_from_db()
-        assert target_user.status == 'active'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(user_status(self.target_user.id), {'status': 'active'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.target_user.refresh_from_db()
+        self.assertEqual(self.target_user.status, 'active')
     
-    def test_update_status_invalid_value(self, api_client, admin_user, target_user):
-        """Admin gửi status không hợp lệ → 400"""
-        response = api_client.patch(user_status(target_user.id), {'status': 'invalid_status'})
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+    def test_update_status_invalid_value(self):
+        """Admin sends invalid status → 400"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(user_status(self.target_user.id), {'status': 'invalid_status'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 # ============================================================================
 # TEST: UPDATE ROLE API - Edge Cases
 # ============================================================================
 
-@pytest.mark.django_db
-class TestUpdateRoleEdgeCases:
-    """Test cases bổ sung cho API PATCH /api/users/:id/role/"""
+class TestUpdateRoleEdgeCases(APITestCase):
+    """Test cases for update role edge cases"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def admin_user(self, api_client):
-        admin = CustomUser.objects.create_superuser(
+    def setUp(self):
+        self.admin = CustomUser.objects.create_superuser(
             email="admin@example.com",
             password="adminpass123"
         )
-        refresh = RefreshToken.for_user(admin)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return admin
-    
-    @pytest.fixture
-    def target_user(self):
-        return CustomUser.objects.create_user(
+        self.target_user = CustomUser.objects.create_user(
             email="target@example.com",
             password="password123",
             full_name="Target User",
             role="recruiter"
         )
     
-    def test_update_role_to_company(self, api_client, admin_user, target_user):
-        """Admin chuyển role thành company → 200"""
-        response = api_client.patch(user_role(target_user.id), {'role': 'company'})
-        assert response.status_code == status.HTTP_200_OK
-        target_user.refresh_from_db()
-        assert target_user.role == 'company'
+    def test_update_role_to_company(self):
+        """Admin changes role to company → 200"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(user_role(self.target_user.id), {'role': 'company'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.target_user.refresh_from_db()
+        self.assertEqual(self.target_user.role, 'company')
     
-    def test_update_role_invalid_value(self, api_client, admin_user, target_user):
-        """Admin gửi role không hợp lệ → 400"""
-        response = api_client.patch(user_role(target_user.id), {'role': 'superadmin'})
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+    def test_update_role_invalid_value(self):
+        """Admin sends invalid role → 400"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(user_role(self.target_user.id), {'role': 'superadmin'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 # ============================================================================
 # TEST: AVATAR API - Edge Cases
 # ============================================================================
 
-@pytest.mark.django_db
-class TestAvatarEdgeCases:
-    """Test cases bổ sung cho API POST/DELETE /api/users/:id/avatar/"""
+class TestAvatarEdgeCases(APITestCase):
+    """Test cases for avatar upload/delete edge cases"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def authenticated_user(self, api_client):
-        user = CustomUser.objects.create_user(
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
             email="avatar@example.com",
             password="password123",
             full_name="Avatar User",
             role="recruiter"
         )
-        refresh = RefreshToken.for_user(user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return user
-    
-    @pytest.fixture
-    def other_user(self):
-        return CustomUser.objects.create_user(
+        self.other_user = CustomUser.objects.create_user(
             email="other@example.com",
             password="password123",
             full_name="Other User",
             role="recruiter"
         )
     
-    def test_upload_avatar_other_user(self, api_client, authenticated_user, other_user):
-        """Upload avatar cho user khác → 403 (BUG ĐÃ SỬa)"""
+    def test_upload_avatar_other_user(self):
+        """Upload avatar for other user → 403"""
+        self.client.force_authenticate(user=self.user)
+        
         file = io.BytesIO()
         image = Image.new('RGB', (100, 100), 'white')
         image.save(file, 'jpeg')
         file.seek(0)
         avatar = SimpleUploadedFile("avatar.jpg", file.read(), content_type="image/jpeg")
         
-        response = api_client.post(user_avatar(other_user.id), {'avatar': avatar}, format='multipart')
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert 'detail' in response.data
+        response = self.client.post(user_avatar(self.other_user.id), {'avatar': avatar}, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn('detail', response.data)
     
-    def test_upload_non_image_file(self, api_client, authenticated_user):
-        """Upload file không phải ảnh → 400"""
+    def test_upload_non_image_file(self):
+        """Upload non-image file → 400"""
+        self.client.force_authenticate(user=self.user)
         text_file = SimpleUploadedFile("document.txt", b"This is a text file", content_type="text/plain")
         
-        response = api_client.post(user_avatar(authenticated_user.id), {'avatar': text_file}, format='multipart')
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        response = self.client.post(user_avatar(self.user.id), {'avatar': text_file}, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
-    def test_delete_avatar_other_user(self, api_client, authenticated_user, other_user):
-        """Xóa avatar của user khác → 403 (BUG ĐÃ SỬa)"""
-        response = api_client.delete(user_avatar(other_user.id))
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert 'detail' in response.data
+    def test_delete_avatar_other_user(self):
+        """Delete other user's avatar → 403"""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.delete(user_avatar(self.other_user.id))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn('detail', response.data)
     
-    def test_upload_avatar_self(self, api_client, authenticated_user):
-        """User upload avatar cho chính mình → 200"""
+    def test_upload_avatar_self(self):
+        """User uploads own avatar → 200"""
+        self.client.force_authenticate(user=self.user)
+        
         file = io.BytesIO()
         image = Image.new('RGB', (100, 100), 'blue')
         image.save(file, 'jpeg')
         file.seek(0)
         avatar = SimpleUploadedFile("my_avatar.jpg", file.read(), content_type="image/jpeg")
         
-        response = api_client.post(user_avatar(authenticated_user.id), {'avatar': avatar}, format='multipart')
-        assert response.status_code == status.HTTP_200_OK
+        response = self.client.post(user_avatar(self.user.id), {'avatar': avatar}, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
     
-    def test_delete_avatar_self(self, api_client, authenticated_user):
-        """User xóa avatar của chính mình → 200"""
-        authenticated_user.avatar_url = "http://example.com/avatar.jpg"
-        authenticated_user.save()
+    def test_delete_avatar_self(self):
+        """User deletes own avatar → 200"""
+        self.user.avatar_url = "http://example.com/avatar.jpg"
+        self.user.save()
         
-        response = api_client.delete(user_avatar(authenticated_user.id))
-        assert response.status_code == status.HTTP_200_OK
+        self.client.force_authenticate(user=self.user)
+        response = self.client.delete(user_avatar(self.user.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
-@pytest.mark.django_db
-class TestPermissionSecurityFix:
-    """Test cases verify security fix: chỉ chính user hoặc admin mới được thao tác"""
+# ============================================================================
+# TEST: Permission Security
+# ============================================================================
+
+class TestPermissionSecurityFix(APITestCase):
+    """Test cases verifying security fix: only self or admin can operate"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def admin_user(self):
-        return CustomUser.objects.create_superuser(
+    def setUp(self):
+        self.admin = CustomUser.objects.create_superuser(
             email="admin@example.com",
             password="adminpass123"
         )
-    
-    @pytest.fixture
-    def target_user(self):
-        return CustomUser.objects.create_user(
+        self.target_user = CustomUser.objects.create_user(
             email="target@example.com",
             password="password123",
             full_name="Target User",
             role="recruiter"
         )
     
-    def test_admin_can_update_other_user(self, api_client, admin_user, target_user):
-        """Admin có thể cập nhật user khác → 200"""
-        refresh = RefreshToken.for_user(admin_user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+    def test_admin_can_update_other_user(self):
+        """Admin can update other user → 200"""
+        self.client.force_authenticate(user=self.admin)
         
-        response = api_client.put(user_detail(target_user.id), {
+        response = self.client.put(user_detail(self.target_user.id), {
             'full_name': 'Updated By Admin'
         })
-        assert response.status_code == status.HTTP_200_OK
-        target_user.refresh_from_db()
-        assert target_user.full_name == 'Updated By Admin'
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.target_user.refresh_from_db()
+        self.assertEqual(self.target_user.full_name, 'Updated By Admin')
     
-    def test_admin_can_upload_avatar_for_other_user(self, api_client, admin_user, target_user):
-        """Admin có thể upload avatar cho user khác → 200"""
-        refresh = RefreshToken.for_user(admin_user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+    def test_admin_can_upload_avatar_for_other_user(self):
+        """Admin can upload avatar for other user → 200"""
+        self.client.force_authenticate(user=self.admin)
         
         file = io.BytesIO()
         image = Image.new('RGB', (100, 100), 'green')
@@ -458,171 +388,140 @@ class TestPermissionSecurityFix:
         file.seek(0)
         avatar = SimpleUploadedFile("admin_avatar.jpg", file.read(), content_type="image/jpeg")
         
-        response = api_client.post(user_avatar(target_user.id), {'avatar': avatar}, format='multipart')
-        assert response.status_code == status.HTTP_200_OK
+        response = self.client.post(user_avatar(self.target_user.id), {'avatar': avatar}, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
     
-    def test_admin_can_delete_avatar_of_other_user(self, api_client, admin_user, target_user):
-        """Admin có thể xóa avatar của user khác → 200"""
-        target_user.avatar_url = "http://example.com/old_avatar.jpg"
-        target_user.save()
+    def test_admin_can_delete_avatar_of_other_user(self):
+        """Admin can delete other user's avatar → 200"""
+        self.target_user.avatar_url = "http://example.com/old_avatar.jpg"
+        self.target_user.save()
         
-        refresh = RefreshToken.for_user(admin_user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+        self.client.force_authenticate(user=self.admin)
         
-        response = api_client.delete(user_avatar(target_user.id))
-        assert response.status_code == status.HTTP_200_OK
-        target_user.refresh_from_db()
-        assert target_user.avatar_url is None
+        response = self.client.delete(user_avatar(self.target_user.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.target_user.refresh_from_db()
+        self.assertIsNone(self.target_user.avatar_url)
 
 
 # ============================================================================
 # TEST: STATS API - Edge Cases
 # ============================================================================
 
-@pytest.mark.django_db
-class TestStatsEdgeCases:
-    """Test cases bổ sung cho API GET /api/users/stats/"""
+class TestStatsEdgeCases(APITestCase):
+    """Test cases for stats API edge cases"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def normal_user(self, api_client):
-        user = CustomUser.objects.create_user(
+    def setUp(self):
+        self.normal_user = CustomUser.objects.create_user(
             email="normal@example.com",
             password="password123",
             full_name="Normal User",
             role="recruiter"
         )
-        refresh = RefreshToken.for_user(user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return user
     
-    def test_stats_as_normal_user(self, api_client, normal_user):
-        """User thường xem stats → 403"""
-        response = api_client.get(USER_STATS)
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+    def test_stats_as_normal_user(self):
+        """Normal user views stats → 403"""
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.get(USER_STATS)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
-    def test_stats_without_authentication(self, api_client):
-        """Xem stats mà chưa đăng nhập → 401"""
-        api_client.credentials()
-        response = api_client.get(USER_STATS)
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    def test_stats_without_authentication(self):
+        """View stats without login → 401"""
+        response = self.client.get(USER_STATS)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 # ============================================================================
 # TEST: EXPORT API - Edge Cases
 # ============================================================================
 
-@pytest.mark.django_db
-class TestExportEdgeCases:
-    """Test cases bổ sung cho API GET /api/users/export/"""
+class TestExportEdgeCases(APITestCase):
+    """Test cases for export API edge cases"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def normal_user(self, api_client):
-        user = CustomUser.objects.create_user(
+    def setUp(self):
+        self.normal_user = CustomUser.objects.create_user(
             email="normal@example.com",
             password="password123",
             full_name="Normal User",
             role="recruiter"
         )
-        refresh = RefreshToken.for_user(user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return user
     
-    def test_export_as_normal_user(self, api_client, normal_user):
-        """User thường export users → 403"""
-        response = api_client.get(USER_EXPORT)
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+    def test_export_as_normal_user(self):
+        """Normal user exports users → 403"""
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.get(USER_EXPORT)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
-    def test_export_without_authentication(self, api_client):
-        """Export users mà chưa đăng nhập → 401"""
-        api_client.credentials()
-        response = api_client.get(USER_EXPORT)
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    def test_export_without_authentication(self):
+        """Export users without login → 401"""
+        response = self.client.get(USER_EXPORT)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 # ============================================================================
 # TEST: BULK ACTION API - Edge Cases
 # ============================================================================
 
-@pytest.mark.django_db
-class TestBulkActionEdgeCases:
-    """Test cases bổ sung cho API POST /api/users/bulk-action/"""
+class TestBulkActionEdgeCases(APITestCase):
+    """Test cases for bulk action API edge cases"""
     
-    @pytest.fixture
-    def api_client(self):
-        return APIClient()
-    
-    @pytest.fixture
-    def admin_user(self, api_client):
-        admin = CustomUser.objects.create_superuser(
+    def setUp(self):
+        self.admin = CustomUser.objects.create_superuser(
             email="admin@example.com",
             password="adminpass123"
         )
-        refresh = RefreshToken.for_user(admin)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return admin
-    
-    @pytest.fixture
-    def normal_user(self, api_client):
-        user = CustomUser.objects.create_user(
+        self.normal_user = CustomUser.objects.create_user(
             email="normal@example.com",
             password="password123",
             full_name="Normal User",
             role="recruiter"
         )
-        refresh = RefreshToken.for_user(user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-        return user
     
-    def test_bulk_action_as_normal_user(self, api_client, normal_user):
-        """User thường thực hiện bulk action → 403"""
-        response = api_client.post(USER_BULK_ACTION, {
+    def test_bulk_action_as_normal_user(self):
+        """Normal user performs bulk action → 403"""
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.post(USER_BULK_ACTION, {
             'ids': [1, 2],
             'action': 'update_status',
             'value': 'banned'
         }, format='json')
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
-    def test_bulk_action_missing_ids(self, api_client, admin_user):
-        """Bulk action thiếu ids → 400"""
-        response = api_client.post(USER_BULK_ACTION, {
+    def test_bulk_action_missing_ids(self):
+        """Bulk action without ids → 400"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(USER_BULK_ACTION, {
             'action': 'update_status',
             'value': 'banned'
         }, format='json')
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
-    def test_bulk_action_missing_action(self, api_client, admin_user):
-        """Bulk action thiếu action → 400"""
-        response = api_client.post(USER_BULK_ACTION, {
+    def test_bulk_action_missing_action(self):
+        """Bulk action without action → 400"""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(USER_BULK_ACTION, {
             'ids': [1, 2],
             'value': 'banned'
         }, format='json')
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
-    def test_bulk_action_invalid_action(self, api_client, admin_user):
-        """Bulk action với action không hợp lệ → 400"""
+    def test_bulk_action_invalid_action(self):
+        """Bulk action with invalid action → 400"""
         u1 = CustomUser.objects.create_user(email="u1@example.com", password="pass")
         
-        response = api_client.post(USER_BULK_ACTION, {
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(USER_BULK_ACTION, {
             'ids': [u1.id],
             'action': 'invalid_action',
             'value': 'some_value'
         }, format='json')
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
-    def test_bulk_action_without_authentication(self, api_client):
-        """Bulk action mà chưa đăng nhập → 401"""
-        api_client.credentials()
-        response = api_client.post(USER_BULK_ACTION, {
+    def test_bulk_action_without_authentication(self):
+        """Bulk action without login → 401"""
+        response = self.client.post(USER_BULK_ACTION, {
             'ids': [1, 2],
             'action': 'update_status',
             'value': 'banned'
         }, format='json')
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

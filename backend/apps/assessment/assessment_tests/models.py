@@ -68,13 +68,21 @@ class AssessmentTest(models.Model):
     questions_data = models.JSONField(
         verbose_name='Dữ liệu câu hỏi'
     )
-    is_active = models.BooleanField(
-        default=True,
-        verbose_name='Đang hoạt động'
-    )
     is_public = models.BooleanField(
         default=True,
         verbose_name='Công khai'
+    )
+    max_retakes = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Số lần thi lại tối đa'
+    )
+    retake_wait_days = models.PositiveIntegerField(
+        default=7,
+        verbose_name='Thời gian chờ thi lại (ngày)'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Đang hoạt động'
     )
     created_by = models.ForeignKey(
         'core_users.CustomUser',

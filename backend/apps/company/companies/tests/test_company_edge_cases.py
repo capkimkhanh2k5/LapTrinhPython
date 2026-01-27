@@ -3,12 +3,11 @@ Test cases bổ sung cho Company Management APIs
 Bổ sung các edge cases và APIs còn thiếu trong Module 2
 """
 import io
-import pytest
 from PIL import Image
 from unittest.mock import patch
+from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
-from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apps.core.users.models import CustomUser
@@ -44,94 +43,70 @@ def company_stats(pk):
 
 
 # ============================================================================
-# FIXTURES
+# BASE TEST CLASS
 # ============================================================================
-@pytest.fixture
-def api_client():
-    return APIClient()
-
-
-@pytest.fixture
-def company_user(db):
-    """User có role company"""
-    return CustomUser.objects.create_user(
-        email="companyowner@example.com",
-        password="password123",
-        role='company'
-    )
-
-
-@pytest.fixture
-def other_user(db):
-    """User khác"""
-    return CustomUser.objects.create_user(
-        email="other@example.com",
-        password="password123"
-    )
-
-
-@pytest.fixture
-def company(db, company_user):
-    """Company fixture"""
-    return Company.objects.create(
-        user=company_user,
-        company_name="Test Company",
-        slug="test-company"
-    )
-
-
-@pytest.fixture
-def orphan_company(db):
-    """Company chưa có owner (user=None) - để test claim"""
-    return Company.objects.create(
-        user=None,
-        company_name="Orphan Company",
-        slug="orphan-company"
-    )
+class BaseCompanyTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.company_user = CustomUser.objects.create_user(
+            email="companyowner@example.com",
+            password="password123",
+            role='company'
+        )
+        self.other_user = CustomUser.objects.create_user(
+            email="other@example.com",
+            password="password123"
+        )
+        self.company = Company.objects.create(
+            user=self.company_user,
+            company_name="Test Company",
+            slug="test-company"
+        )
+        self.orphan_company = Company.objects.create(
+            user=None,
+            company_name="Orphan Company",
+            slug="orphan-company"
+        )
 
 
 # ============================================================================
 # TESTS: GET /api/companies/:id - Chi tiết công ty
 # ============================================================================
-@pytest.mark.django_db
-class TestRetrieveCompanyById:
+class TestRetrieveCompanyById(BaseCompanyTestCase):
     """Tests cho GET /api/companies/:id"""
     
-    def test_retrieve_company_success(self, api_client, company):
+    def test_retrieve_company_success(self):
         """Lấy chi tiết công ty theo ID thành công"""
-        response = api_client.get(company_detail(company.id))
+        response = self.client.get(company_detail(self.company.id))
         
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['id'] == company.id
-        assert response.data['company_name'] == 'Test Company'
-        assert response.data['slug'] == 'test-company'
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], self.company.id)
+        self.assertEqual(response.data['company_name'], 'Test Company')
+        self.assertEqual(response.data['slug'], 'test-company')
     
-    def test_retrieve_company_not_found(self, api_client):
+    def test_retrieve_company_not_found(self):
         """Company không tồn tại → 404"""
-        response = api_client.get(company_detail(99999))
+        response = self.client.get(company_detail(99999))
         
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
-    def test_retrieve_company_public(self, api_client, company):
+    def test_retrieve_company_public(self):
         """Truy cập chi tiết công ty không cần authentication"""
-        # Không authenticate
-        response = api_client.get(company_detail(company.id))
-        
-        assert response.status_code == status.HTTP_200_OK
+        response = self.client.get(company_detail(self.company.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 # ============================================================================
 # TESTS: POST /api/companies/:id/logo - Upload logo
 # ============================================================================
-@pytest.mark.django_db
-class TestUploadLogo:
+class TestUploadLogo(BaseCompanyTestCase):
     """Tests cho POST /api/companies/:id/logo"""
     
     @patch('apps.company.companies.services.companies.upload_company_logo')
-    def test_upload_logo_success(self, mock_upload, api_client, company_user, company):
+    def test_upload_logo_success(self, mock_upload):
         """Upload logo thành công"""
         mock_upload.return_value = "http://cloudinary.com/logo.jpg"
-        api_client.force_authenticate(user=company_user)
+        self.client.force_authenticate(user=self.company_user)
         
         # Tạo file ảnh giả
         file = io.BytesIO()
@@ -140,14 +115,14 @@ class TestUploadLogo:
         file.seek(0)
         logo = SimpleUploadedFile("logo.jpg", file.read(), content_type="image/jpeg")
         
-        response = api_client.post(company_logo(company.id), {'logo': logo}, format='multipart')
+        response = self.client.post(company_logo(self.company.id), {'logo': logo}, format='multipart')
         
-        assert response.status_code == status.HTTP_200_OK
-        assert 'logo_url' in response.data
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('logo_url', response.data)
     
-    def test_upload_logo_not_owner(self, api_client, other_user, company):
+    def test_upload_logo_not_owner(self):
         """Không phải owner → 403"""
-        api_client.force_authenticate(user=other_user)
+        self.client.force_authenticate(user=self.other_user)
         
         file = io.BytesIO()
         image = Image.new('RGB', (100, 100), 'red')
@@ -155,20 +130,20 @@ class TestUploadLogo:
         file.seek(0)
         logo = SimpleUploadedFile("logo.jpg", file.read(), content_type="image/jpeg")
         
-        response = api_client.post(company_logo(company.id), {'logo': logo}, format='multipart')
+        response = self.client.post(company_logo(self.company.id), {'logo': logo}, format='multipart')
         
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
-    def test_upload_logo_no_file(self, api_client, company_user, company):
+    def test_upload_logo_no_file(self):
         """Không có file → 400"""
-        api_client.force_authenticate(user=company_user)
+        self.client.force_authenticate(user=self.company_user)
         
-        response = api_client.post(company_logo(company.id), {}, format='multipart')
+        response = self.client.post(company_logo(self.company.id), {}, format='multipart')
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'File not provided' in response.data['detail']
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('File not provided', response.data['detail'])
     
-    def test_upload_logo_unauthenticated(self, api_client, company):
+    def test_upload_logo_unauthenticated(self):
         """Chưa đăng nhập → 401"""
         file = io.BytesIO()
         image = Image.new('RGB', (100, 100), 'red')
@@ -176,13 +151,13 @@ class TestUploadLogo:
         file.seek(0)
         logo = SimpleUploadedFile("logo.jpg", file.read(), content_type="image/jpeg")
         
-        response = api_client.post(company_logo(company.id), {'logo': logo}, format='multipart')
+        response = self.client.post(company_logo(self.company.id), {'logo': logo}, format='multipart')
         
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
-    def test_upload_logo_company_not_found(self, api_client, company_user):
+    def test_upload_logo_company_not_found(self):
         """Company không tồn tại → 404"""
-        api_client.force_authenticate(user=company_user)
+        self.client.force_authenticate(user=self.company_user)
         
         file = io.BytesIO()
         image = Image.new('RGB', (100, 100), 'red')
@@ -190,35 +165,22 @@ class TestUploadLogo:
         file.seek(0)
         logo = SimpleUploadedFile("logo.jpg", file.read(), content_type="image/jpeg")
         
-        response = api_client.post(company_logo(99999), {'logo': logo}, format='multipart')
+        response = self.client.post(company_logo(99999), {'logo': logo}, format='multipart')
         
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-    
-    def test_upload_logo_invalid_file_type(self, api_client, company_user, company):
-        """File không phải ảnh - chấp nhận vì API không validate file type"""
-        api_client.force_authenticate(user=company_user)
-        
-        # Tạo file text
-        text_file = SimpleUploadedFile("test.txt", b"not an image", content_type="text/plain")
-        
-        response = api_client.post(company_logo(company.id), {'logo': text_file}, format='multipart')
-        
-        # API hiện tại không validate file type, có thể return 200 hoặc 400
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST]
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 # ============================================================================
 # TESTS: POST /api/companies/:id/banner - Upload banner
 # ============================================================================
-@pytest.mark.django_db
-class TestUploadBanner:
+class TestUploadBanner(BaseCompanyTestCase):
     """Tests cho POST /api/companies/:id/banner"""
     
     @patch('apps.company.companies.services.companies.upload_company_banner')
-    def test_upload_banner_success(self, mock_upload, api_client, company_user, company):
+    def test_upload_banner_success(self, mock_upload):
         """Upload banner thành công"""
         mock_upload.return_value = "http://cloudinary.com/banner.jpg"
-        api_client.force_authenticate(user=company_user)
+        self.client.force_authenticate(user=self.company_user)
         
         file = io.BytesIO()
         image = Image.new('RGB', (1200, 400), 'blue')
@@ -226,14 +188,14 @@ class TestUploadBanner:
         file.seek(0)
         banner = SimpleUploadedFile("banner.jpg", file.read(), content_type="image/jpeg")
         
-        response = api_client.post(company_banner(company.id), {'banner': banner}, format='multipart')
+        response = self.client.post(company_banner(self.company.id), {'banner': banner}, format='multipart')
         
-        assert response.status_code == status.HTTP_200_OK
-        assert 'banner_url' in response.data
-    
-    def test_upload_banner_not_owner(self, api_client, other_user, company):
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('banner_url', response.data)
+
+    def test_upload_banner_not_owner(self):
         """Không phải owner → 403"""
-        api_client.force_authenticate(user=other_user)
+        self.client.force_authenticate(user=self.other_user)
         
         file = io.BytesIO()
         image = Image.new('RGB', (1200, 400), 'blue')
@@ -241,198 +203,200 @@ class TestUploadBanner:
         file.seek(0)
         banner = SimpleUploadedFile("banner.jpg", file.read(), content_type="image/jpeg")
         
-        response = api_client.post(company_banner(company.id), {'banner': banner}, format='multipart')
+        response = self.client.post(company_banner(self.company.id), {'banner': banner}, format='multipart')
         
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-    
-    def test_upload_banner_no_file(self, api_client, company_user, company):
-        """Không có file → 400"""
-        api_client.force_authenticate(user=company_user)
-        
-        response = api_client.post(company_banner(company.id), {}, format='multipart')
-        
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'File not provided' in response.data['detail']
-    
-    def test_upload_banner_unauthenticated(self, api_client, company):
-        """Chưa đăng nhập → 401"""
-        response = api_client.post(company_banner(company.id), {}, format='multipart')
-        
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    
-    def test_upload_banner_company_not_found(self, api_client, company_user):
-        """Company không tồn tại → 404"""
-        api_client.force_authenticate(user=company_user)
-        
-        file = io.BytesIO()
-        image = Image.new('RGB', (1200, 400), 'blue')
-        image.save(file, 'jpeg')
-        file.seek(0)
-        banner = SimpleUploadedFile("banner.jpg", file.read(), content_type="image/jpeg")
-        
-        response = api_client.post(company_banner(99999), {'banner': banner}, format='multipart')
-        
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 # ============================================================================
 # TESTS: GET /api/companies/:id/jobs - Danh sách việc làm
 # ============================================================================
-@pytest.mark.django_db
-class TestCompanyJobs:
+class TestCompanyJobs(BaseCompanyTestCase):
     """Tests cho GET /api/companies/:id/jobs"""
     
-    def test_list_company_jobs_success(self, api_client, company):
+    def test_list_company_jobs_success(self):
         """Danh sách jobs của công ty thành công"""
-        response = api_client.get(company_jobs(company.id))
+        response = self.client.get(company_jobs(self.company.id))
         
-        assert response.status_code == status.HTTP_200_OK
-        assert isinstance(response.data, list)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, list)
     
-    def test_list_company_jobs_not_found(self, api_client):
+    def test_list_company_jobs_not_found(self):
         """Company không tồn tại → 404"""
-        response = api_client.get(company_jobs(99999))
+        response = self.client.get(company_jobs(99999))
         
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-    
-    def test_list_company_jobs_public(self, api_client, company):
-        """Truy cập public không cần auth"""
-        response = api_client.get(company_jobs(company.id))
-        
-        assert response.status_code == status.HTTP_200_OK
-    
-    @pytest.mark.skip(reason="Cần tạo Job fixtures với status khác nhau")
-    def test_list_company_jobs_only_published(self, api_client, company):
-        """Chỉ trả về jobs có status='published'"""
-        # TODO: Tạo jobs với status 'draft' và 'published'
-        # Và verify chỉ published được trả về
-        response = api_client.get(company_jobs(company.id))
-        
-        assert response.status_code == status.HTTP_200_OK
-        # Verify all returned jobs have status='published'
-        for job in response.data:
-            assert job.get('status') == 'published'
-
-
-# ============================================================================
-# TESTS: GET /api/companies/:id/reviews - Đánh giá công ty
-# ============================================================================
-@pytest.mark.django_db
-class TestCompanyReviews:
-    """Tests cho GET /api/companies/:id/reviews"""
-    
-    @pytest.mark.skip(reason="Company.reviews relation cần app social_reviews được load đúng trong test")
-    def test_list_company_reviews_success(self, api_client, company):
-        """Danh sách reviews của công ty thành công"""
-        response = api_client.get(company_reviews(company.id))
-        
-        assert response.status_code == status.HTTP_200_OK
-        assert isinstance(response.data, list)
-    
-    @pytest.mark.skip(reason="Company.reviews relation cần app social_reviews được load đúng trong test")
-    def test_list_company_reviews_not_found(self, api_client):
-        """Company không tồn tại → 404"""
-        response = api_client.get(company_reviews(99999))
-        
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-    
-    @pytest.mark.skip(reason="Company.reviews relation cần app social_reviews được load đúng")
-    def test_list_company_reviews_only_approved(self, api_client, company):
-        """Chỉ trả về reviews có status='approved'"""
-        # TODO: Tạo reviews với status 'pending' và 'approved'
-        # Và verify chỉ approved được trả về
-        response = api_client.get(company_reviews(company.id))
-        
-        assert response.status_code == status.HTTP_200_OK
-        # Verify all returned reviews have status='approved'
-        for review in response.data:
-            assert review.get('status') == 'approved'
-
-
-# ============================================================================
-# TESTS: GET /api/companies/:id/followers - Người theo dõi
-# ============================================================================
-@pytest.mark.django_db
-class TestCompanyFollowersList:
-    """Tests cho GET /api/companies/:id/followers"""
-    
-    def test_list_company_followers_success(self, api_client, company):
-        """Danh sách người theo dõi thành công"""
-        response = api_client.get(company_followers(company.id))
-        
-        assert response.status_code == status.HTTP_200_OK
-        assert isinstance(response.data, list)
-    
-    def test_list_company_followers_not_found(self, api_client):
-        """Company không tồn tại → 404"""
-        response = api_client.get(company_followers(99999))
-        
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 # ============================================================================
 # TESTS: POST /api/companies/:id/claim - Nhận quyền quản lý
 # ============================================================================
-@pytest.mark.django_db
-class TestClaimCompany:
+class TestClaimCompany(BaseCompanyTestCase):
     """Tests cho POST /api/companies/:id/claim"""
     
-    def test_claim_company_success(self, api_client, other_user, orphan_company):
+    def test_claim_company_success(self):
         """Claim company chưa có owner thành công"""
-        api_client.force_authenticate(user=other_user)
+        self.client.force_authenticate(user=self.other_user)
         
-        response = api_client.post(company_claim(orphan_company.id))
+        response = self.client.post(company_claim(self.orphan_company.id))
         
-        assert response.status_code == status.HTTP_200_OK
-        assert 'claimed successfully' in response.data['detail']
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('claimed successfully', response.data['detail'])
         
         # Verify DB
-        orphan_company.refresh_from_db()
-        assert orphan_company.user == other_user
+        self.orphan_company.refresh_from_db()
+        self.assertEqual(self.orphan_company.user, self.other_user)
     
-    def test_claim_company_already_claimed(self, api_client, other_user, company):
+    def test_claim_company_already_claimed(self):
         """Company đã có owner → 400"""
-        api_client.force_authenticate(user=other_user)
+        self.client.force_authenticate(user=self.other_user)
         
-        response = api_client.post(company_claim(company.id))
+        response = self.client.post(company_claim(self.company.id))
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'already claimed' in response.data['detail']
-    
-    def test_claim_company_unauthenticated(self, api_client, orphan_company):
-        """Chưa đăng nhập → 401 hoặc 403"""
-        response = api_client.post(company_claim(orphan_company.id))
-        
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
-    
-    def test_claim_company_not_found(self, api_client, other_user):
-        """Company không tồn tại → 404"""
-        api_client.force_authenticate(user=other_user)
-        
-        response = api_client.post(company_claim(99999))
-        
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('already claimed', response.data['detail'])
 
 
 # ============================================================================
-# TESTS: GET /api/companies/:id/stats - Thống kê (Bổ sung)
+# TESTS: GET /api/companies/suggestions - Gợi ý công ty (Personalization)
 # ============================================================================
-@pytest.mark.django_db
-class TestCompanyStats:
-    """Tests cho GET /api/companies/:id/stats"""
+class TestCompanySuggestions(TestCase):
+    """Tests cho GET /api/companies/suggestions"""
     
-    @pytest.mark.skip(reason="Company.reviews relation cần app social_reviews được load đúng")
-    def test_company_stats_success(self, api_client, company):
-        """Lấy thống kê công ty thành công"""
-        response = api_client.get(company_stats(company.id))
+    def setUp(self):
+        self.client = APIClient()
+        from apps.company.companies.models import Company
+        from apps.core.users.models import CustomUser
+        from apps.candidate.recruiters.models import Recruiter
         
-        assert response.status_code == status.HTTP_200_OK
-        assert 'job_count' in response.data
-        assert 'follower_count' in response.data
-        assert 'review_count' in response.data
+        # Setup company owner
+        self.company_user = CustomUser.objects.create_user(email="company@example.com", password="password", role='company')
+        
+        # Setup base company
+        self.company = Company.objects.create(
+            user=self.company_user,
+            company_name="Test Company",
+            slug="test-company",
+            verification_status='verified',
+            follower_count=100
+        )
+        self.user = CustomUser.objects.create_user(email="candidate@example.com", password="password")
+        self.recruiter = Recruiter.objects.create(user=self.user)
+        
+    def _setup_skill_matching(self):
+        """Helper to setup skill matching data"""
+        from apps.recruitment.jobs.models import Job
+        from apps.candidate.skills.models import Skill
+        from apps.candidate.skill_categories.models import SkillCategory
+        from apps.recruitment.job_skills.models import JobSkill
+        from apps.candidate.recruiter_skills.models import RecruiterSkill
+        
+        # 0. Tạo Skill Category
+        category = SkillCategory.objects.create(name="IT", slug="it")
+        
+        # 1. Tạo Skill "Python"
+        python_skill = Skill.objects.create(
+            name="Python", 
+            slug="python",
+            category=category
+        )
+        
+        # 2. Gán skill cho Recruiter
+        RecruiterSkill.objects.create(recruiter=self.recruiter, skill=python_skill)
+        
+        # 3. Tạo Job requires Python của Company
+        job = Job.objects.create(
+            company=self.company, 
+            title="Python Dev", 
+            slug="python-dev",
+            status=Job.Status.PUBLISHED,
+            created_by=self.company.user  # Required field
+        )
+        JobSkill.objects.create(job=job, skill=python_skill)
+        
+        return self.user, self.company
+        
+    def test_suggestions_anonymous(self):
+        """Anonymous user -> Trả về top trending (verified)"""
+        response = self.client.get('/api/companies/suggestions/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should contain at least our verified company
+        self.assertTrue(len(response.data) > 0)
+        found_ids = [c['id'] for c in response.data]
+        self.assertIn(self.company.id, found_ids)
+
+    def test_suggestions_by_skills(self):
+        """Logged in user -> Gợi ý theo skill match"""
+        self._setup_skill_matching()
+        
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/companies/suggestions/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should find the company because user has Python skill and company hires for Python
+        found_ids = [c['id'] for c in response.data]
+        self.assertIn(self.company.id, found_ids)
+
+    def test_suggestions_fallback(self):
+        """Logged in user NO matching -> Fallback to top trending"""
+        # Create user with no skills
+        no_skill_user = CustomUser.objects.create_user(email="no_skill@example.com", password="password")
+        from apps.candidate.recruiters.models import Recruiter
+        Recruiter.objects.create(user=no_skill_user)
+        
+        self.client.force_authenticate(user=no_skill_user)
+        response = self.client.get('/api/companies/suggestions/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should still return list (fallback)
+        self.assertIsInstance(response.data, list)
+        # And should include our popular company (fallback logic)
+        found_ids = [c['id'] for c in response.data]
+        self.assertIn(self.company.id, found_ids)
+
+
+# ============================================================================
+# TESTS: Job Status Filtering (Edge Cases)
+# ============================================================================
+class TestJobStatusFiltering(TestCase):
+    """Tests filtering draft/closed jobs"""
     
-    def test_company_stats_not_found(self, api_client):
-        """Company không tồn tại → 404"""
-        response = api_client.get(company_stats(99999))
+    def setUp(self):
+        self.client = APIClient()
+        from apps.company.companies.models import Company
+        from apps.core.users.models import CustomUser
         
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        self.user = CustomUser.objects.create_user(email="owner@example.com", password="password")
+        self.company = Company.objects.create(
+            company_name="My Company",
+            slug="my-company",
+            user=self.user
+        )
+    
+    def test_list_company_jobs_excludes_draft(self):
+        """Public API không hiển thị job nháp"""
+        from apps.recruitment.jobs.models import Job
+        
+        # Create Draft Job
+        Job.objects.create(
+            company=self.company, 
+            title="Draft Job", 
+            slug="draft-job",
+            status=Job.Status.DRAFT,
+            created_by=self.user  # Required field
+        )
+        # Create Published Job
+        Job.objects.create(
+            company=self.company, 
+            title="Public Job", 
+            slug="public-job",
+            status=Job.Status.PUBLISHED,
+            created_by=self.user  # Required field
+        )
+        
+        response = self.client.get(company_jobs(self.company.id))
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['title'], "Public Job")

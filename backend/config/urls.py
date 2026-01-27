@@ -133,6 +133,7 @@ urlpatterns = [
     
     # Advanced Features
     path('api/search-history/', include('apps.system.job_search_history.urls')),
+    path('api/analytics-reports/', include('apps.system.analytics_reports.urls')),
     
     # Analytics & Reporting
     path('api/dashboard/', include('apps.analytics.urls')),

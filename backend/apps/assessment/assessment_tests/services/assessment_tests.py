@@ -11,8 +11,7 @@ from apps.assessment.test_results.models import TestResult
 from apps.candidate.recruiters.models import Recruiter
 
 
-# Default settings
-MAX_RETAKE_ATTEMPTS = 3
+# Logic Upgrade complete
 
 class StartTestInput(BaseModel):
     """Input for starting a test."""
@@ -42,17 +41,6 @@ class SubmitTestInput(BaseModel):
 def start_test(input_data: StartTestInput) -> dict:
     """
     Start a test session for a recruiter.
-    
-    Args:
-        input_data: StartTestInput with test_id and recruiter_id
-        
-    Returns:
-        dict with test info and questions (without correct answers)
-        
-    Raises:
-        AssessmentTest.DoesNotExist: If test not found
-        Recruiter.DoesNotExist: If recruiter not found
-        ValueError: If test not active or max retakes exceeded
     """
     # Verify test exists and is active
     test = AssessmentTest.objects.get(id=input_data.test_id)
@@ -63,14 +51,11 @@ def start_test(input_data: StartTestInput) -> dict:
     # Verify recruiter exists
     recruiter = Recruiter.objects.get(id=input_data.recruiter_id)
     
-    # Check retake limit
-    attempt_count = TestResult.objects.filter(
-        assessment_test=test,
-        recruiter=recruiter
-    ).count()
+    # Check retake eligibility (Dynamic from model)
+    eligibility = check_retake_eligibility(test.id, recruiter.id)
     
-    if attempt_count >= MAX_RETAKE_ATTEMPTS:
-        raise ValueError(f'Maximum retake limit ({MAX_RETAKE_ATTEMPTS}) exceeded')
+    if not eligibility['can_retake']:
+        raise ValueError(eligibility.get('message', 'Retake limit exceeded or wait period active'))
     
     # Prepare questions without correct answers
     questions_data = test.questions_data or {}
@@ -94,7 +79,7 @@ def start_test(input_data: StartTestInput) -> dict:
         'total_questions': test.total_questions,
         'questions': safe_questions,
         'started_at': timezone.now(),
-        'attempt_number': attempt_count + 1,
+        'attempt_number': eligibility['attempts_used'] + 1,
     }
 
 
@@ -253,27 +238,51 @@ def get_test_results(test_id: int, recruiter_id: int) -> list[TestResult]:
 
 def check_retake_eligibility(test_id: int, recruiter_id: int) -> dict:
     """
-    Check if recruiter can retake a test.
-    
-    Args:
-        test_id: Assessment test ID
-        recruiter_id: Recruiter ID
-        
-    Returns:
-        dict with can_retake, attempts_used, attempts_remaining
+    Check if recruiter can retake a test based on model configuration.
     """
-    attempt_count = TestResult.objects.filter(
+    test = AssessmentTest.objects.get(id=test_id)
+    
+    results = TestResult.objects.filter(
         assessment_test_id=test_id,
         recruiter_id=recruiter_id
-    ).count()
+    ).order_by('-completed_at')
     
-    can_retake = attempt_count < MAX_RETAKE_ATTEMPTS
+    attempt_count = results.count()
+    latest_result = results.first()
     
+    max_attempts = test.max_retakes + 1  # Original + Max Retakes
+    
+    can_retake = True
+    message = "Available"
+    next_available_date = None
+    days_to_wait = 0
+    
+    # 1. Check max attempts
+    if attempt_count >= max_attempts:
+        can_retake = False
+        message = f"Bạn đã đạt giới hạn tối đa {max_attempts} lần thi cho bài test này."
+    
+    # 2. Check wait period if there's a previous result
+    elif latest_result and test.retake_wait_days > 0:
+        wait_period = timezone.timedelta(days=test.retake_wait_days)
+        next_available_date = latest_result.completed_at + wait_period
+        
+        if timezone.now() < next_available_date:
+            can_retake = False
+            # Calculate days remaining (round up)
+            delta = next_available_date - timezone.now()
+            days_remaining = delta.days + (1 if delta.seconds > 0 else 0)
+            message = f"Bạn cần chờ thêm {days_remaining} ngày để có thể thi lại bài test này."
+            days_to_wait = days_remaining
+
     return {
         'can_retake': can_retake,
+        'message': message,
         'attempts_used': attempt_count,
-        'attempts_remaining': max(0, MAX_RETAKE_ATTEMPTS - attempt_count),
-        'max_attempts': MAX_RETAKE_ATTEMPTS,
+        'attempts_remaining': max(0, max_attempts - attempt_count),
+        'max_attempts': max_attempts,
+        'next_available_date': next_available_date.isoformat() if next_available_date else None,
+        'wait_days_remaining': days_to_wait,
     }
 
 

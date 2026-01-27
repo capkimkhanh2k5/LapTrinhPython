@@ -78,16 +78,16 @@ def calculate_education_score(job: Job, recruiter: Recruiter) -> dict:
         score = Decimal('100.00')
         status = 'meets_or_exceeds'
     elif education_gap == 1:
-        # 1 level below
-        score = Decimal('70.00')
+        # UPDATED: 1 level below - experience often compensates for education
+        score = Decimal('85.00')
         status = 'slightly_below'
     elif education_gap == 2:
-        # 2 levels below
-        score = Decimal('40.00')
+        # UPDATED: 2 levels below - still consider if experience is strong
+        score = Decimal('60.00')
         status = 'below_requirement'
     else:
         # More than 2 levels below
-        score = Decimal('20.00')
+        score = Decimal('30.00')
         status = 'significantly_below'
     
     return {

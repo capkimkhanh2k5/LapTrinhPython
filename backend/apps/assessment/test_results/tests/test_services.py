@@ -230,13 +230,20 @@ class TestRequestRetake(TestCase):
     
     def test_request_retake_success(self):
         """Should allow retake when eligible."""
+        from datetime import timedelta
+        
+        # Create result in the past to allow retake
+        past_date = timezone.now() - timedelta(days=30)
+        
         result = TestResult.objects.create(
             assessment_test=self.test,
             recruiter=self.recruiter,
             score=Decimal('50.00'),
             passed=False,
-            started_at=timezone.now()
+            started_at=past_date
         )
+        # Force update completed_at because auto_now_add=True prevents setting it in create
+        TestResult.objects.filter(id=result.id).update(completed_at=past_date)
         
         retake = request_retake(result.id, self.recruiter.id)
         

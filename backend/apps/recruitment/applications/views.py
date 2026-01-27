@@ -10,6 +10,7 @@ from apps.recruitment.interviews.selectors.interviews import list_interviews_by_
 from apps.recruitment.interviews.serializers import InterviewListSerializer
 from apps.recruitment.application_status_history.selectors.application_status_history import list_history_by_application
 from apps.recruitment.application_status_history.serializers import StatusHistorySerializer
+from apps.recruitment.application_status_history.services.application_status_history import log_status_history
 from apps.candidate.recruiters.selectors.recruiters import get_recruiter_by_user
 
 from django.http import HttpResponse

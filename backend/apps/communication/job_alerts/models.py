@@ -106,6 +106,10 @@ class JobAlert(models.Model):
         default=True,
         verbose_name='Nhận email thông báo'
     )
+    use_ai_matching = models.BooleanField(
+        default=True,
+        verbose_name='Sử dụng AI Match'
+    )
     last_sent_at = models.DateTimeField(
         null=True,
         blank=True,

@@ -1,14 +1,10 @@
 """
 Tests cho Company Media API
-
-TODO: Company Media API chưa được registered trong urls.py
-Các tests này sẽ được enable sau khi API hoàn thiện.
 """
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
 from unittest.mock import patch
-from unittest import skip
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apps.core.users.models import CustomUser
@@ -17,8 +13,6 @@ from apps.company.media_types.models import MediaType
 from apps.company.company_media.models import CompanyMedia
 
 
-# TODO: Sẽ hoàn thiện sau khi Company Media API được registered trong urls.py
-@skip("TODO: Company Media API chưa registered - sẽ hoàn thiện sau")
 class CompanyMediaViewTest(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -56,7 +50,7 @@ class CompanyMediaViewTest(TestCase):
         media = CompanyMedia.objects.create(company=self.company, media_type=self.media_type, media_url="u1")
         
         data = {'title': 'Updated Title'}
-        response = self.client.put(f'/api/companies/{self.company.id}/media/{media.id}', data, format='json')
+        response = self.client.put(f'/api/companies/{self.company.id}/media/{media.id}', data, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], 'Updated Title')
